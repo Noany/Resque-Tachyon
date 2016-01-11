@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tachyon.Constants;
 import tachyon.conf.TachyonConf;
+import tachyon.thrift.BenefitInfo;
 import tachyon.thrift.PartitionInfo;
 import tachyon.util.CommonUtils;
 
@@ -53,7 +54,7 @@ public class LocalPartitionOutStream extends BlockOutStream{
      * @throws IOException
      */
     LocalPartitionOutStream(TachyonFile file, WriteType opType, long totalSize,
-                        int id, int index, double benefit, TachyonConf tachyonConf) throws IOException {
+                        int id, int index, BenefitInfo benefit, TachyonConf tachyonConf) throws IOException {
         super(file, opType, tachyonConf);
 
         // BlockOutStream.get() already checks for the local worker, but this verifies the local worker
@@ -65,13 +66,12 @@ public class LocalPartitionOutStream extends BlockOutStream{
         }
 
         mBlockCapacityByte = mFile.getBlockSizeByte();
-        System.out.println("File " + file.getPath() + ": BlockSize is " + mBlockCapacityByte);
         numBlocks = (int)(totalSize/mBlockCapacityByte) + (totalSize%mBlockCapacityByte == 0 ? 0 : 1);
         mBlockIds = new long[numBlocks];
         mLocalFiles = new RandomAccessFile[numBlocks];
         mLocalFileChannels = new FileChannel[numBlocks];
 
-        PartitionInfo partitionInfo = new PartitionInfo(id, index, benefit, -1, -1, mBlockCapacityByte);
+        PartitionInfo partitionInfo = new PartitionInfo(id, index, benefit, mBlockCapacityByte*numBlocks);
 
 
         for (int i = 0; i < numBlocks; i++) {
@@ -79,7 +79,6 @@ public class LocalPartitionOutStream extends BlockOutStream{
             mBlockIds[i] = blockId;
             partitionInfo.addToBlockIds(blockId);
         }
-
 
         List<String> paths = mTachyonFS.getLocalPartitionTemporaryPath(partitionInfo);
         mLocalFilePaths = paths.toArray(new String[paths.size()]);
@@ -123,7 +122,6 @@ public class LocalPartitionOutStream extends BlockOutStream{
 
         MappedByteBuffer out = mLocalFileChannels[mCurrentBlockIndex].map(FileChannel.MapMode.READ_WRITE, mInFileBytes, length);
         out.put(buf, offset, length);
-        System.out.println("Write " + length + " Bytes to file " + mLocalFilePaths[mCurrentBlockIndex]);
         CommonUtils.cleanDirectBuffer(out);
         mInFileBytes += length;
         mAvailableBytes -= length;
@@ -157,9 +155,7 @@ public class LocalPartitionOutStream extends BlockOutStream{
             flush();
             mClosers[mCurrentBlockIndex].close();
             if (mWrittenBytes%mBlockCapacityByte > 0) {
-                System.out.println("In LocalPartitionOutStream.close().Cache Block for blockId " + mBlockIds[mCurrentBlockIndex]);
                 mTachyonFS.cacheBlock(mBlockIds[mCurrentBlockIndex]);
-                System.out.println("In LocalPartitionOutStream.close().Cached Block for blockId " + mBlockIds[mCurrentBlockIndex]);
                 mTachyonFS.getClientMetrics().incBlocksWrittenLocal(1);
             }else{
                 mTachyonFS.cancelBlock(mBlockIds[mCurrentBlockIndex]);
@@ -210,7 +206,6 @@ public class LocalPartitionOutStream extends BlockOutStream{
             throw new IOException("Out of capacity.");
         }
 
-        System.out.println("Write to LocalPartitionOutStream with length " + len);
 
         try {
             int tLen = len;

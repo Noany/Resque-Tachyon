@@ -156,12 +156,6 @@ public class BlockInfo {
    * @return the net addresses of the locations
    */
   public synchronized List<NetAddress> getLocations(TachyonConf tachyonConf) {
-    System.out.println("Get Locations for blockId " + mBlockId + " with " + mLocations.size() + " mLocations and "
-            + mStorageDirIds.size() + " mStorageDirIds.");
-    for (Map.Entry<NetAddress, Long> entry : mStorageDirIds.entrySet()) {
-      System.out.println("NetAddress " + entry.getKey() + ", storageAlias: " +
-              StorageDirId.getStorageLevelAliasValue(entry.getValue()) + " for blockId " + mBlockId);
-    }
     List<NetAddress> ret = new ArrayList<NetAddress>(mLocations.size());
     for (StorageLevelAlias alias : StorageLevelAlias.values()) {
       for (Map.Entry<NetAddress, Long> entry : mStorageDirIds.entrySet()) {
@@ -221,6 +215,17 @@ public class BlockInfo {
     if (mLocations.containsKey(workerId)) {
       mStorageDirIds.remove(mLocations.remove(workerId));
     }
+  }
+
+  //zengdan
+  public synchronized boolean removeLocation(long workerId, boolean deleteFlag) {
+    if (mLocations.containsKey(workerId)) {
+      mStorageDirIds.remove(mLocations.remove(workerId));
+    }
+    if (deleteFlag && mLocations.size() == 0) {
+      return true;
+    }
+    return false;
   }
 
   @Override

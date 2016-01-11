@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 
 import tachyon.TachyonURI;
+import tachyon.thrift.BenefitInfo;
 import tachyon.thrift.ClientFileInfo;
 import tachyon.thrift.FileDoesNotExistException;
 import tachyon.thrift.InvalidPathException;
@@ -80,6 +81,10 @@ interface TachyonFSCore extends Closeable {
 
   //zengdan
   void qgmaster_setBenefit(Map<String, Double> filesBenefit)
+          throws IOException, FileDoesNotExistException, InvalidPathException;
+
+  //zengdan
+  void qgmaster_updateBenefit(Map<String, BenefitInfo> filesBenefit)
           throws IOException, FileDoesNotExistException, InvalidPathException;
 
   /**

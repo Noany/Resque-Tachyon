@@ -255,36 +255,6 @@ public class BlockServiceHandlerIntegrationTest {
     Assert.assertNotNull(exception);
   }
 
-  // zengdan
-  @Test
-  public void requestPartitionLocationTest() throws Exception {
-    final long blockId1 = 12345L;
-    final long blockId2 = 12346L;
-    final long blockId3 = 12347L;
-    final int chunkSize = (int) WORKER_CAPACITY_BYTES / 10;
-
-    Set<PartitionInfo> partitions = new HashSet<PartitionInfo>();
-
-    PartitionInfo partition1 = new PartitionInfo(1, 2, 0, -1, -1, WORKER_CAPACITY_BYTES/2);
-    partition1.addToBlockIds(blockId1);
-    partition1.addToBlockIds(blockId2);
-    List<String> ret1 = mWorkerServiceHandler.requestPartitionLocation(USER_ID, partition1);
-    Assert.assertEquals(2, ret1.size());
-
-    partitions.add(partition1);
-    mWorkerServiceHandler.getBlockManager().updateBenefit(partitions);
-
-    mWorkerServiceHandler.cacheBlock(USER_ID, blockId1);
-    mWorkerServiceHandler.cacheBlock(USER_ID, blockId2);
-
-    PartitionInfo partition2 = new PartitionInfo(2, 4, 0, -1, -1, WORKER_CAPACITY_BYTES/2);
-    partition2.addToBlockIds(blockId3);
-    List<String> ret2 = mWorkerServiceHandler.requestPartitionLocation(USER_ID, partition2);
-    Assert.assertEquals(1, ret2.size());
-
-
-  }
-
   // Tests that multiple users cannot request a combined space greater than worker space
   @Test
   public void totalOverCapacityRequestSpaceTest() throws Exception {

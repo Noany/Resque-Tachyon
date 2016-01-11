@@ -120,9 +120,7 @@ public class Users {
       if (mUsers.containsKey(userId)) {
         mUsers.get(userId).heartbeat();
       } else {
-        int userTimeoutMs = 10000000;
-            //mTachyonConf.getInt(Constants.WORKER_USER_TIMEOUT_MS, 10000 * Constants.SECOND_MS);
-        //zengdan change 10 to 10000
+        int userTimeoutMs = mTachyonConf.getInt(Constants.WORKER_USER_TIMEOUT_MS, 10 * Constants.SECOND_MS);
 
         System.out.println("Timeout for user " + userId + " is " + userTimeoutMs);  //zengdan
         mUsers.put(userId, new UserInfo(userId, userTimeoutMs));

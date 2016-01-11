@@ -54,8 +54,8 @@ public class BlockMetadataManager {
   private BlockMetadataManager() {}
 
   //zengdan
-  public synchronized void setBlockIdToBenefit(Set<PartitionInfo> benefit) {
-    mPartitionInfos = benefit;
+  public synchronized void setPartitionInfos(Set<PartitionInfo> partitionInfos) {
+    mPartitionInfos = partitionInfos;
   }
 
   //zengdan

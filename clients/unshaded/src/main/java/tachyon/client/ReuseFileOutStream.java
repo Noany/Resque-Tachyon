@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tachyon.Constants;
 import tachyon.conf.TachyonConf;
+import tachyon.thrift.BenefitInfo;
 import tachyon.underfs.UnderFileSystem;
 import tachyon.util.CommonUtils;
 
@@ -39,7 +40,7 @@ public class ReuseFileOutStream extends OutStream{
      * @param tachyonConf the TachyonConf instance for this file output stream.
      * @throws IOException
      */
-    ReuseFileOutStream(TachyonFile file, WriteType opType, long totalSize, int id, int index, double benefit, Object ufsConf, TachyonConf tachyonConf)
+    ReuseFileOutStream(TachyonFile file, WriteType opType, long totalSize, int id, int index, BenefitInfo benefit, Object ufsConf, TachyonConf tachyonConf)
             throws IOException {
         super(file, opType, tachyonConf);
 

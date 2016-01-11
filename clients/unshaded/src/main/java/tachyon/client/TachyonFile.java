@@ -32,6 +32,7 @@ import com.google.common.io.Closer;
 import tachyon.Constants;
 import tachyon.TachyonURI;
 import tachyon.conf.TachyonConf;
+import tachyon.thrift.BenefitInfo;
 import tachyon.thrift.ClientBlockInfo;
 import tachyon.thrift.ClientFileInfo;
 import tachyon.thrift.NetAddress;
@@ -242,7 +243,7 @@ public class TachyonFile implements Comparable<TachyonFile> {
   }
 
   //zengdan
-  public OutStream getOutStream(WriteType writeType, long totalSize, int id, int index, double benefit) throws IOException {
+  public OutStream getOutStream(WriteType writeType, long totalSize, int id, int index, BenefitInfo benefit) throws IOException {
     if (isComplete()) {
       throw new IOException("Overriding after completion not supported.");
     }
@@ -301,7 +302,9 @@ public class TachyonFile implements Comparable<TachyonFile> {
    * @throws IOException
    */
   public boolean isComplete() throws IOException {
-    return getCachedFileStatus().isComplete || getUnCachedFileStatus().isComplete;
+    //zengdan
+    //return getCachedFileStatus().isComplete || getUnCachedFileStatus().isComplete;
+    return getUnCachedFileStatus().isComplete;
   }
 
   /**

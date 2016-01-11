@@ -406,7 +406,6 @@ public class WorkerClient implements Closeable {
 
     try {
       return mClient.requestPartitionLocation(mMasterClient.getUserId(), partition);
-      //return mClient.requestPartitionLocation2(mMasterClient.getUserId(), partition.getId(), partition.getBenefit(), partition.getBlockSize());
     } catch (OutOfSpaceException e) {
       throw new IOException(e);
     } catch (FileAlreadyExistException e) {

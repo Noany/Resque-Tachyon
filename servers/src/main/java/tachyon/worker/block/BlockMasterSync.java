@@ -219,7 +219,7 @@ public class BlockMasterSync implements Runnable {
     //zengdan
     if (cmd.mPartitionInfos != null && cmd.mPartitionInfos.size() > 0) {
       LOG.info("Got " + cmd.mPartitionInfos.size() + " benefits from Command in BlockMasterSync.");
-      mBlockDataManager.updateBenefit(cmd.mPartitionInfos);
+      mBlockDataManager.updatePartitionInfos(cmd.mPartitionInfos);
     }
   }
 

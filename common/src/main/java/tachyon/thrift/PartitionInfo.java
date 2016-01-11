@@ -19,7 +19,7 @@ public class PartitionInfo implements org.apache.thrift.TBase<PartitionInfo, Par
 
     private static final org.apache.thrift.protocol.TField ID_FIELD_DESC = new org.apache.thrift.protocol.TField("id", TType.I32, (short)1);
     private static final org.apache.thrift.protocol.TField INDEX_FIELD_DESC = new org.apache.thrift.protocol.TField("index", TType.I32, (short)2);
-    private static final org.apache.thrift.protocol.TField BENEFIT_FIELD_DESC = new org.apache.thrift.protocol.TField("benefit", TType.DOUBLE, (short)3);
+    private static final org.apache.thrift.protocol.TField BENEFIT_FIELD_DESC = new org.apache.thrift.protocol.TField("benefit", TType.STRUCT, (short)3);
     private static final org.apache.thrift.protocol.TField BLOCK_IDS_FIELD_DESC = new org.apache.thrift.protocol.TField("blocks", TType.LIST, (short)4);
     private static final org.apache.thrift.protocol.TField TIER_LEVEL_FIELD_DESC = new org.apache.thrift.protocol.TField("tierLevel", TType.I32, (short)5);
     private static final org.apache.thrift.protocol.TField DIR_INDEX_FIELD_DESC = new org.apache.thrift.protocol.TField("dirIndex", TType.I32, (short)6);
@@ -33,7 +33,7 @@ public class PartitionInfo implements org.apache.thrift.TBase<PartitionInfo, Par
 
     public int id;
     public int index;
-    public double benefit;
+    public BenefitInfo benefit;
     public List<Long> blockIds;
     public int tierLevel;
     public int dirIndex;
@@ -118,10 +118,10 @@ public class PartitionInfo implements org.apache.thrift.TBase<PartitionInfo, Par
     // isset id assignments
     private static final int __ID_ISSET_ID = 0;
     private static final int __INDEX_ISSET_ID = 1;
-    private static final int __BENEFIT_ISSET_ID = 2;
-    private static final int __TIER_LEVEL_ISSET_ID = 3;
-    private static final int __DIR_INDEX_ISSET_ID = 4;
-    private static final int __BLOCK_SIZE_ISSET_ID = 5;
+    //private static final int __BENEFIT_ISSET_ID = 2;
+    private static final int __TIER_LEVEL_ISSET_ID = 2;
+    private static final int __DIR_INDEX_ISSET_ID = 3;
+    private static final int __BLOCK_SIZE_ISSET_ID = 4;
     private byte __isset_bitfield = 0;
     public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
     static {
@@ -131,7 +131,7 @@ public class PartitionInfo implements org.apache.thrift.TBase<PartitionInfo, Par
         tmpMap.put(_Fields.INDEX, new org.apache.thrift.meta_data.FieldMetaData("index", org.apache.thrift.TFieldRequirementType.DEFAULT,
                 new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I32)));
         tmpMap.put(_Fields.BENEFIT, new org.apache.thrift.meta_data.FieldMetaData("benefit", org.apache.thrift.TFieldRequirementType.DEFAULT,
-                new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.DOUBLE)));
+                new org.apache.thrift.meta_data.StructMetaData(TType.STRUCT, BenefitInfo.class)));
         tmpMap.put(_Fields.BLOCK_IDS, new org.apache.thrift.meta_data.FieldMetaData("blockIds", org.apache.thrift.TFieldRequirementType.DEFAULT,
                 new org.apache.thrift.meta_data.ListMetaData(TType.LIST,
                         new org.apache.thrift.meta_data.FieldValueMetaData(TType.I64))));
@@ -148,27 +148,11 @@ public class PartitionInfo implements org.apache.thrift.TBase<PartitionInfo, Par
     public PartitionInfo() {
     }
 
-    public PartitionInfo(int id, int index, double benefit) {
-        this();
-        this.id = id;
-        setIdIsSet(true);
-        this.index = index;
-        setIndexIsSet(true);
-        this.benefit = benefit;
-        setBenefitIsSet(true);
-        this.blockIds = new ArrayList<Long>();
-        this.tierLevel = -1;
-        setTierLevelIsSet(false);
-        this.dirIndex = -1;
-        setDirIndexIsSet(false);
-        this.blockSize = 0;
-        setBlockSizeIsSet(false);
-    }
-
+    //used when master transfers benefit info to workers && spark worker transfers benefit info to worker to movePartitionToMemory
     public PartitionInfo(
             int id,
             int index,
-            double benefit,
+            BenefitInfo benefit,
             List<Long> blockIds)
     {
         this();
@@ -187,12 +171,12 @@ public class PartitionInfo implements org.apache.thrift.TBase<PartitionInfo, Par
         setBlockSizeIsSet(false);
     }
 
+
+    //used when create new partition
     public PartitionInfo(
             int id,
             int index,
-            double benefit,
-            int tierLevel,
-            int dirIndex,
+            BenefitInfo benefit,
             long blockSize)
     {
         this();
@@ -203,35 +187,10 @@ public class PartitionInfo implements org.apache.thrift.TBase<PartitionInfo, Par
         this.benefit = benefit;
         setBenefitIsSet(true);
         this.blockIds = new ArrayList<Long>();
-        this.tierLevel = tierLevel;
-        setTierLevelIsSet(true);
-        this.dirIndex = dirIndex;
-        setDirIndexIsSet(true);
-        this.blockSize = blockSize;
-        setBlockSizeIsSet(true);
-    }
-
-    public PartitionInfo(
-            int id,
-            int index,
-            double benefit,
-            int tierLevel,
-            int dirIndex,
-            long blockSize,
-            List<Long> blockIds)
-    {
-        this();
-        this.id = id;
-        setIdIsSet(true);
-        this.index = index;
-        setIndexIsSet(true);
-        this.benefit = benefit;
-        setBenefitIsSet(true);
-        this.blockIds = blockIds;
-        this.tierLevel = tierLevel;
-        setTierLevelIsSet(true);
-        this.dirIndex = dirIndex;
-        setDirIndexIsSet(true);
+        this.tierLevel = -1;
+        setTierLevelIsSet(false);
+        this.dirIndex = -1;
+        setDirIndexIsSet(false);
         this.blockSize = blockSize;
         setBlockSizeIsSet(true);
     }
@@ -266,8 +225,7 @@ public class PartitionInfo implements org.apache.thrift.TBase<PartitionInfo, Par
         this.id = -1;
         setIndexIsSet(false);
         this.index = -1;
-        setBenefitIsSet(false);
-        this.benefit = 0;
+        this.benefit = null;
         this.blockIds = null;
         setTierLevelIsSet(false);
         this.tierLevel = -1;
@@ -323,27 +281,29 @@ public class PartitionInfo implements org.apache.thrift.TBase<PartitionInfo, Par
         __isset_bitfield = EncodingUtils.setBit(__isset_bitfield, __INDEX_ISSET_ID, value);
     }
 
-    public double getBenefit() {
+    public BenefitInfo getBenefit() {
         return this.benefit;
     }
 
-    public PartitionInfo setBenefit(double benefit) {
+    public PartitionInfo setBenefit(BenefitInfo benefit) {
         this.benefit = benefit;
         setBenefitIsSet(true);
         return this;
     }
 
     public void unsetBenefit() {
-        __isset_bitfield = EncodingUtils.clearBit(__isset_bitfield, __BENEFIT_ISSET_ID);
+        benefit = null;
     }
 
     /** Returns true if field offset is set (has been assigned a value) and false otherwise */
     public boolean isSetBenefit() {
-        return EncodingUtils.testBit(__isset_bitfield, __BENEFIT_ISSET_ID);
+        return benefit != null;
     }
 
     public void setBenefitIsSet(boolean value) {
-        __isset_bitfield = EncodingUtils.setBit(__isset_bitfield, __BENEFIT_ISSET_ID, value);
+        if (!value) {
+            this.benefit = null;
+        }
     }
 
     public int getBlockIdsSize() {
@@ -476,7 +436,7 @@ public class PartitionInfo implements org.apache.thrift.TBase<PartitionInfo, Par
                 if (value == null) {
                     unsetBenefit();
                 } else {
-                    setBenefit((Double) value);
+                    setBenefit((BenefitInfo) value);
                 }
                 break;
 
@@ -521,7 +481,7 @@ public class PartitionInfo implements org.apache.thrift.TBase<PartitionInfo, Par
                 return Integer.valueOf(getIndex());
 
             case BENEFIT:
-                return Double.valueOf(getBenefit());
+                return getBenefit();
 
             case BLOCK_IDS:
                 return getBlockIds();
@@ -736,6 +696,8 @@ public class PartitionInfo implements org.apache.thrift.TBase<PartitionInfo, Par
         } else {
             sb.append(this.blockIds);
         }
+        first = false;
+        if (!first) sb.append(", ");
         sb.append("tierLevel:");
         sb.append(this.tierLevel);
         first = false;
@@ -808,8 +770,9 @@ public class PartitionInfo implements org.apache.thrift.TBase<PartitionInfo, Par
                         }
                         break;
                     case 3: // BENEFIT
-                        if (schemeField.type == TType.DOUBLE) {
-                            struct.benefit = iprot.readDouble();
+                        if (schemeField.type == TType.STRUCT) {
+                            struct.benefit = new BenefitInfo();
+                            struct.benefit.read(iprot);
                             struct.setBenefitIsSet(true);
                         } else {
                             org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
@@ -878,8 +841,11 @@ public class PartitionInfo implements org.apache.thrift.TBase<PartitionInfo, Par
             oprot.writeFieldBegin(INDEX_FIELD_DESC);
             oprot.writeI32(struct.index);
             oprot.writeFieldEnd();
-            oprot.writeFieldBegin(BENEFIT_FIELD_DESC);
-            oprot.writeDouble(struct.benefit);
+            if (struct.benefit != null) {
+                oprot.writeFieldBegin(BENEFIT_FIELD_DESC);
+                struct.benefit.write(oprot);
+                oprot.writeFieldEnd();
+            }
             oprot.writeFieldEnd();
             if (struct.blockIds != null) {
                 oprot.writeFieldBegin(BLOCK_IDS_FIELD_DESC);
@@ -949,7 +915,7 @@ public class PartitionInfo implements org.apache.thrift.TBase<PartitionInfo, Par
                 oprot.writeI32(struct.index);
             }
             if (struct.isSetBenefit()) {
-                oprot.writeDouble(struct.benefit);
+                struct.benefit.write(oprot);
             }
             if (struct.isSetBlockIds()) {
                 {
@@ -984,7 +950,8 @@ public class PartitionInfo implements org.apache.thrift.TBase<PartitionInfo, Par
                 struct.setIndexIsSet(true);
             }
             if (incoming.get(2)) {
-                struct.benefit = iprot.readDouble();
+                struct.benefit = new BenefitInfo();
+                struct.benefit.read(iprot);
                 struct.setBenefitIsSet(true);
             }
             if (incoming.get(3)) {

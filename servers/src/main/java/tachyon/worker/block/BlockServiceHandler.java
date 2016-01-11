@@ -200,36 +200,15 @@ public class BlockServiceHandler implements WorkerService.Iface {
           throws OutOfSpaceException {
     try {
       // NOTE: right now, we ask allocator to allocate new blocks in MEM tier
-      LOG.error("BlockServiceHandler: requestPartitionLocation for partition " + partition);
+      LOG.info("BlockServiceHandler: requestPartitionLocation for partition " + partition);
       List<Integer> tierAliasList = new ArrayList<Integer>();
       tierAliasList.add(StorageLevelAlias.MEM.getValue());
       tierAliasList.add(StorageLevelAlias.HDD.getValue());
       return mWorker.createPartition(userId, partition, tierAliasList);
     } catch (IOException ioe) {  //change IOException to IOException
-      System.out.println("RequestPartitionLocation for id " + partition.getId() + ", index " + partition.getIndex()
+      LOG.error("RequestPartitionLocation for id " + partition.getId() + ", index " + partition.getIndex()
               + " failed. " + ioe.getMessage());
       throw new OutOfSpaceException("Failed to allocate partition " + partition.getId() + " for user " + userId);
-    }
-  }
-
-  //zengdan for test
-  public BlockDataManager getBlockManager() {
-    return mWorker;
-  }
-
-  public List<String> requestPartitionLocation2(long userId, int id, double benefit, long blockSize)
-          throws OutOfSpaceException {
-    try {
-      // NOTE: right now, we ask allocator to allocate new blocks in MEM tier
-      LOG.error("BlockServiceHandler: requestPartitionLocation2.");
-      List<String> test = new ArrayList<String>();
-      test.add("Test");
-      return test;
-      //PartitionInfo partition = new PartitionInfo(id, benefit);
-      //partition.setBlockSize(blockSize);
-      //return mWorker.createPartition(userId, partition, StorageLevelAlias.MEM.getValue());
-    } catch (Exception ioe) {
-      throw new OutOfSpaceException("Failed to allocate partition " + id + " for user " + userId);
     }
   }
 

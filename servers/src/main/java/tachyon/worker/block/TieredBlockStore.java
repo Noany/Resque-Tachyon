@@ -35,7 +35,9 @@ import com.google.common.io.Files;
 
 import tachyon.Constants;
 import tachyon.Pair;
+import tachyon.StorageLevelAlias;
 import tachyon.conf.TachyonConf;
+import tachyon.thrift.BenefitInfo;
 import tachyon.thrift.InvalidPathException;
 import tachyon.thrift.PartitionInfo;
 import tachyon.util.CommonUtils;
@@ -89,8 +91,44 @@ public class TieredBlockStore implements BlockStore {
   private final ReentrantReadWriteLock mEvictionLock = new ReentrantReadWriteLock();
 
   //zengdan
-  public void updateBenefit(Set<PartitionInfo> benefit)  {
-    mMetaManager.setBlockIdToBenefit(benefit);
+  public void updatePartitionInfos(Set<PartitionInfo> partitionInfos)  {
+    mMetaManager.setPartitionInfos(partitionInfos);
+  }
+
+  //zengdan
+  public double computeBenefit(PartitionInfo partition) {
+    long firstBlock = partition.blockIds.get(0);
+
+    try {
+      int tierAlias = mMetaManager.getBlockMeta(firstBlock).getBlockLocation().tierAlias();
+      int bandwidth = 0;
+      if (tierAlias == StorageLevelAlias.MEM.getValue()) {
+        bandwidth = mTachyonConf.getInt(Constants.WORKER_MEMEORY_BANDWIDTH_MBS, 25000);
+      } else if(tierAlias == StorageLevelAlias.HDD.getValue()) {
+        bandwidth = mTachyonConf.getInt(Constants.WORKER_DISK_BANDWIDTH_MBS, 200);
+      } else {
+        return 0;
+      }
+      BenefitInfo benefitInfo = partition.getBenefit();
+      return benefitInfo.getRecency()*(benefitInfo.getRef()*benefitInfo.getCost() -
+              (benefitInfo.getRef() + 1)*benefitInfo.getDataSize()/bandwidth);
+    } catch (IOException e) {
+      LOG.error("Failed to computeBenefit for partition " + partition + " because blockId " + firstBlock + " not exists");
+      return 0;
+    }
+  }
+
+  //zengdan for not stored partition
+  public double computeBenefit(PartitionInfo partition, boolean inMem) {
+    int bandwidth;
+    if (inMem) {
+      bandwidth = mTachyonConf.getInt(Constants.WORKER_MEMEORY_BANDWIDTH_MBS, 25000);
+    } else {
+      bandwidth = mTachyonConf.getInt(Constants.WORKER_DISK_BANDWIDTH_MBS, 200);
+    }
+    BenefitInfo benefitInfo = partition.getBenefit();
+    return benefitInfo.getRecency()*(benefitInfo.getRef()*benefitInfo.getCost() -
+            (benefitInfo.getRef() + 1)*benefitInfo.getDataSize()/bandwidth);
   }
 
   public TieredBlockStore(TachyonConf tachyonConf) throws IOException {
@@ -113,6 +151,8 @@ public class TieredBlockStore implements BlockStore {
         Collections.<Integer>emptySet(), Collections.<Long>emptySet());
     System.out.println("Evictor type is " + evictorType); //zengdan
     mEvictor = EvictorFactory.create(evictorType, initManagerView);
+    mEvictor.setBandwidth(mTachyonConf.getInt(Constants.WORKER_MEMEORY_BANDWIDTH_MBS, 25000),
+            mTachyonConf.getInt(Constants.WORKER_DISK_BANDWIDTH_MBS, 200));
     if (mEvictor instanceof BlockStoreEventListener) {
       registerBlockStoreEventListener((BlockStoreEventListener) mEvictor);
     }
@@ -280,6 +320,8 @@ public class TieredBlockStore implements BlockStore {
       }
     }
 
+    //partition.setBlockSize(mMetaManager.getBlockMeta(partition.getBlockIds().get(0)).getBlockSize());
+
     movePartitionInternal(userId, partition, newLocation);
   }
 
@@ -423,21 +465,24 @@ public class TieredBlockStore implements BlockStore {
       }
     }
 
-    long totalSize = blockIds.length*partition.getBlockSize();
+    long totalSize = partition.getBlockSize(); //blockIds.length*partition.getBlockSize();
     LOG.info("Allocate space for partition {} with size {}", partition, totalSize);
     StorageDirView dirView = mAllocator.allocatePartitionWithView(totalSize, locations.subList(0, 1));
     if (dirView == null) {
       //TODO  modify the implementation
       freeSpaceInternal(userId, partition.getBenefit(), totalSize, locations);
       dirView = mAllocator.allocatePartitionWithView(totalSize, locations);
-      Preconditions.checkNotNull(dirView, "Cannot allocate partition %d:", partition.getId());
+    }
+    if (dirView == null) {
+      throw new IOException("Cannot allocate partition " + partition);
     }
     //LOG.info("Store partition (" + partition.getId() + ", " + partition.getIndex() + ") in tierLevel " + dirView.getParentTierView().getTierViewLevel());
     LOG.info("Store partition ({}, {}) in tierLevel {}", partition.getId(), partition.getIndex(), dirView.getParentTierView().getTierViewLevel());
 
+    long initialBlockSize = partition.getBlockSize()/partition.getBlockIdsSize();
     for (int i = 0; i < blockIds.length; i++) {
       long blockId = blockIds[i];
-      TempBlockMeta tempBlock = dirView.createTempBlockMeta(userId, blockId, partition.getBlockSize());
+      TempBlockMeta tempBlock = dirView.createTempBlockMeta(userId, blockId, initialBlockSize);
       //LOG.debug("Added tempBlockMeta for blockId " + blockId + " with size " + tempBlock.getBlockSize());
       LOG.debug("Added tempBlockMeta for blockId {} with size {}", blockId, tempBlock.getBlockSize());
       mMetaManager.addTempBlockMeta(tempBlock);
@@ -541,7 +586,7 @@ public class TieredBlockStore implements BlockStore {
   }
 
   //zengdan
-  private void freeSpaceInternal(long userId, double benefit, long initialSize,
+  private void freeSpaceInternal(long userId, BenefitInfo benefit, long initialSize,
                                  List<BlockStoreLocation> locations) throws IOException{
     EvictionPlan plan = mEvictor.freePartitionSpaceWithView(benefit, initialSize, locations, getUpdatedView());
     // Absent plan means failed to evict enough space.
@@ -616,7 +661,7 @@ public class TieredBlockStore implements BlockStore {
     LOG.info("Move Partition for " + partition);
 
     //TODO When considering blocks to move, the space occupied by current partition can be added.
-    long totalSize = partition.getBlockIdsSize()*partition.getBlockSize();
+    long totalSize = partition.getBlockSize();//partition.getBlockIdsSize()*partition.getBlockSize();
     EvictionPlan plan = mEvictor.freePartitionSpaceWithView(partition.getBenefit(),
             totalSize, Lists.newArrayList(newLocation), getUpdatedView());
     // Absent plan means failed to evict enough space.
@@ -671,7 +716,9 @@ public class TieredBlockStore implements BlockStore {
         if (oldLocation.belongTo(newLoc)) {
           continue; //zengdan
         }
+        LOG.info("Move block " + blockId);
         long lockId = mLockManager.lockBlock(userId, blockId, BlockLockType.WRITE);
+        LOG.info("Locked block " + blockId);
         try {
           moveBlockNoLock(blockId, newLoc);
           synchronized (mBlockStoreEventListeners) {

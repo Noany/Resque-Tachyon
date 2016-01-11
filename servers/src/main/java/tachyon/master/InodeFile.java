@@ -142,8 +142,6 @@ public class InodeFile extends Inode {
     if (blockIndex < 0 || blockIndex >= mBlocks.size()) {
       throw new BlockInfoException("BlockIndex " + blockIndex + " out of bounds." + toString());
     }
-
-    System.out.println("AddLocation " + workerAddress + " for blockId " + mBlocks.get(blockIndex).mBlockId);
     mBlocks.get(blockIndex).addLocation(workerId, workerAddress, storageDirId);
   }
 
@@ -388,6 +386,31 @@ public class InodeFile extends Inode {
     }
     System.out.println("RemoveLocation for blockId " + mBlocks.get(blockIndex).mBlockId);
     mBlocks.get(blockIndex).removeLocation(workerId);
+  }
+
+  //zengdan
+  public synchronized void removeLocation(int blockIndex, long workerId, boolean deleteFlag) throws BlockInfoException {
+    if (blockIndex < 0 || blockIndex >= mBlocks.size()) {
+      throw new BlockInfoException("BlockIndex " + blockIndex + " out of bounds." + toString());
+    }
+    System.out.println("RemoveLocation for blockId " + mBlocks.get(blockIndex).mBlockId);
+    //mBlocks.get(blockIndex).removeLocation(workerId);
+    //zengdan
+    BlockInfo blockInfo = mBlocks.get(blockIndex);
+    if (blockInfo.removeLocation(workerId, deleteFlag)) {
+      System.out.println("Block lost from file. BlockId is " + mBlocks.get(blockIndex).mBlockId);
+      //mBlocks.remove(blockInfo);
+      mIsComplete = false;
+    }
+
+    /*
+    if (deleteFlag && mBlocks.size() == 0) {
+      System.out.println("RemoveLocation for blockId " + mBlocks.get(blockIndex).mBlockId +
+              ". Need to delete file.");
+      return true;
+    }
+    return false;
+    */
   }
 
   /**

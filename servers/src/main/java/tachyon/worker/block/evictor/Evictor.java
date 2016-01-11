@@ -18,6 +18,7 @@ package tachyon.worker.block.evictor;
 import java.io.IOException;
 import java.util.List;
 
+import tachyon.thrift.BenefitInfo;
 import tachyon.worker.block.BlockMetadataManagerView;
 import tachyon.worker.block.BlockStoreLocation;
 import tachyon.worker.block.meta.TempBlockMeta;
@@ -50,6 +51,9 @@ public interface Evictor {
       BlockMetadataManagerView view) throws IOException;
 
   //zengdan
-  EvictionPlan freePartitionSpaceWithView(double benefit, long blockSize,
+  EvictionPlan freePartitionSpaceWithView(BenefitInfo benefit, long totalSize,
       List<BlockStoreLocation> locations, BlockMetadataManagerView view) throws IOException;
+
+  //zengdan
+  void setBandwidth(int memBandwidth, int diskBandwidth);
 }

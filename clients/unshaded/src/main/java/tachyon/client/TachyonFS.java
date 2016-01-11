@@ -649,11 +649,13 @@ public class TachyonFS extends AbstractTachyonFS {
   }
 
   //zengdan
-  public synchronized boolean movePartitionToMemory(int id, int index, double benefit, TachyonFile file) throws IOException{
-    PartitionInfo partitionInfo = new PartitionInfo(id, index, benefit, -1, -1, file.getBlockSizeByte());
+  public synchronized boolean movePartitionToMemory(int id, int index, BenefitInfo benefit, TachyonFile file) throws IOException{
+    List<Long> blockIds = new ArrayList<Long>();
     for (int i = 0; i < file.getNumberOfBlocks(); i++) {
-      partitionInfo.addToBlockIds(file.getBlockId(i));
+      blockIds.add(file.getBlockId(i));
     }
+    PartitionInfo partitionInfo = new PartitionInfo(id, index, benefit, blockIds);
+    partitionInfo.setBlockSize(file.length());
     return mWorkerClient.movePartitionToMemory(partitionInfo);
   }
 
@@ -786,6 +788,13 @@ public class TachyonFS extends AbstractTachyonFS {
   public synchronized void qgmaster_setBenefit(Map<String, Double> filesBenefit)
           throws IOException, FileDoesNotExistException, InvalidPathException {
     mMasterClient.qgmaster_setBenefit(filesBenefit);
+  }
+
+  //zengdan
+  @Override
+  public synchronized void qgmaster_updateBenefit(Map<String, BenefitInfo> filesBenefit)
+          throws IOException, FileDoesNotExistException, InvalidPathException {
+    mMasterClient.qgmaster_updateBenefit(filesBenefit);
   }
 
   /**

@@ -20,14 +20,7 @@ package tachyon.worker.block.evictor;
  */
 
 import java.io.IOException;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.TreeSet;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Comparator;
+import java.util.*;
 
 import com.google.common.base.Preconditions;
 import org.slf4j.Logger;
@@ -35,6 +28,8 @@ import org.slf4j.LoggerFactory;
 
 import tachyon.Constants;
 import tachyon.Pair;
+import tachyon.StorageLevelAlias;
+import tachyon.thrift.BenefitInfo;
 import tachyon.thrift.PartitionInfo;
 import tachyon.worker.block.BlockMetadataManagerView;
 import tachyon.worker.block.BlockStoreEventListenerBase;
@@ -48,19 +43,62 @@ public class ReuseEvictor extends BlockStoreEventListenerBase implements Evictor
 
   private static final Logger LOG = LoggerFactory.getLogger(Constants.LOGGER_TYPE);
   private BlockMetadataManagerView mManagerView;
+  private int memBandwidth;
+  private int diskBandwidth;
   //private final Map<Pair<Integer, Integer>, Set<PartitionInfo>> mBlockInfos =
   //        new HashMap<Pair<Integer, Integer>, Set<PartitionInfo>>();
-  private final Set<PartitionInfo> mPartitions =
-          new TreeSet<PartitionInfo>(new Comparator<PartitionInfo>() {
+  private final Set<Pair<PartitionInfo, Double>> mPartitions =
+          new TreeSet<Pair<PartitionInfo, Double>>(new Comparator<Pair<PartitionInfo, Double>>() {
             @Override
-            public int compare(PartitionInfo o1, PartitionInfo o2) {
-              return (int)(o1.getBenefit() - o2.getBenefit());
+            public int compare(Pair<PartitionInfo, Double> o1, Pair<PartitionInfo, Double> o2) {
+              return (int)(o1.getSecond() - o2.getSecond());
             }
           });
+
+  //zengdan
+  public double computeBenefit(PartitionInfo partition) {
+    long firstBlock = partition.blockIds.get(0);
+
+    try {
+      int tierAlias = mManagerView.getBlockMeta(firstBlock).getBlockLocation().tierAlias();
+      int bandwidth = 0;
+      if (tierAlias == StorageLevelAlias.MEM.getValue()) {
+        bandwidth = memBandwidth;
+      } else if(tierAlias == StorageLevelAlias.HDD.getValue()) {
+        bandwidth = diskBandwidth;
+      } else {
+        return 0;
+      }
+      BenefitInfo benefitInfo = partition.getBenefit();
+      return benefitInfo.getRecency()*(benefitInfo.getRef()*benefitInfo.getCost()*1.0/1000 -
+              (benefitInfo.getRef() + 1)*benefitInfo.getDataSize()*1.0/(1000000*bandwidth));
+    } catch (IOException e) {
+      LOG.error("Failed to computeBenefit for partition " + partition + " because blockId " + firstBlock + " not exists");
+      return 0;
+    }
+  }
+
+  //zengdan for not stored partition
+  public double computeBenefit(BenefitInfo benefitInfo, boolean inMem) {
+    int bandwidth;
+    if (inMem) {
+      bandwidth = memBandwidth;
+    } else {
+      bandwidth = diskBandwidth;
+    }
+    return benefitInfo.getRecency()*(benefitInfo.getRef()*benefitInfo.getCost()*1.0/1000 -
+            (benefitInfo.getRef() + 1)*benefitInfo.getDataSize()*1.0/(1000000*bandwidth));
+  }
 
 
   public ReuseEvictor(BlockMetadataManagerView view) {
     mManagerView = Preconditions.checkNotNull(view);
+  }
+
+  @Override
+  public void setBandwidth(int memBandwidth, int diskBandwidth) {
+    this.memBandwidth = memBandwidth;
+    this.diskBandwidth = diskBandwidth;
   }
 
   @Override
@@ -73,10 +111,10 @@ public class ReuseEvictor extends BlockStoreEventListenerBase implements Evictor
 
   //zengdan
   @Override
-  public EvictionPlan freePartitionSpaceWithView(double benefit, long totalSize,
+  public EvictionPlan freePartitionSpaceWithView(BenefitInfo benefitInfo, long totalSize,
       List<BlockStoreLocation> locations, BlockMetadataManagerView view) throws IOException {
     getLocalBlocksInfos();
-    LOG.info("In ReuseEvitor: FreePartitionSpace for benefit {}, size {}", benefit, totalSize);
+    LOG.info("In ReuseEvitor: FreePartitionSpace for benefit {}, size {}", benefitInfo, totalSize);
     List<Pair<Long, BlockStoreLocation>> toTransfer = new java.util.ArrayList<Pair<Long, BlockStoreLocation>>();
     List<Long> toEvict = new ArrayList<Long>();
     List<PartitionInfo> reuseVictims = new ArrayList<PartitionInfo>();
@@ -86,15 +124,16 @@ public class ReuseEvictor extends BlockStoreEventListenerBase implements Evictor
 
     for (BlockStoreLocation location : locations) {
       if (location.equals(BlockStoreLocation.anyTier())) {
-        selectedDirView = selectDirToEvictBlocksFromAnyTier(totalSize, benefit, reuseVictims, ordinaryVictims);
+        selectedDirView = selectDirToEvictBlocksFromAnyTier(totalSize, benefitInfo, reuseVictims, ordinaryVictims);
       } else {
         int tierAlias = location.tierAlias();
         StorageTierView tierView = mManagerView.getTierView(tierAlias);
         if (location.equals(BlockStoreLocation.anyDirInTier(tierAlias))) {
-          selectedDirView = selectDirToEvictBlocksFromTier(tierView, totalSize, benefit, reuseVictims, ordinaryVictims);
+          selectedDirView = selectDirToEvictBlocksFromTier(tierView, totalSize, benefitInfo, reuseVictims, ordinaryVictims);
         } else {
           int dirIndex = location.dir();
           StorageDirView dir = tierView.getDirView(dirIndex);
+          double benefit = computeBenefit(benefitInfo, tierView.getTierViewAlias() == StorageLevelAlias.MEM.getValue());
           if (canEvictBlocksFromDir(dir, totalSize, benefit, reuseVictims, ordinaryVictims)) {
             selectedDirView = dir;
           }
@@ -109,7 +148,6 @@ public class ReuseEvictor extends BlockStoreEventListenerBase implements Evictor
               totalSize);
       return null;
     }
-
 
     long bytesAvailableInDir = selectedDirView.getAvailableBytes();
     if (bytesAvailableInDir < totalSize) {
@@ -137,11 +175,12 @@ public class ReuseEvictor extends BlockStoreEventListenerBase implements Evictor
       List<StorageTierView> toTiers = mManagerView.getTierViewsBelowLevel(partition.getTierLevel());
 
       StorageDirView toDir = selectDirToTransferPartition(partition.getBenefit(),
-              partition.getBlockSize()*partition.getBlockIds().size(), toTiers,
+              partition.getBlockSize(), toTiers,
               pendingBytesInDir, curNextReuseVictims, curNextOrdinaryVictims);
+      //*partition.getBlockIds().size()
       if (toDir == null) {
         toEvict.addAll(partition.getBlockIds());
-        LOG.debug("Evict partition " + partition);
+        LOG.info("Evict partition " + partition);
       } else {
         StorageTierView toTier = toDir.getParentTierView();
         for (long blockId : partition.getBlockIds()) {
@@ -155,7 +194,7 @@ public class ReuseEvictor extends BlockStoreEventListenerBase implements Evictor
             pendingBytesInDir.put(toDir, block.getBlockSize());
           }
         }
-        LOG.debug("Transfer partition " + partition);
+        LOG.info("Transfer partition {} to tierLevel {}", partition, toTier.getTierViewLevel());
         nextReuseVictims.addAll(curNextReuseVictims);
         nextOrdinaryVictims.addAll(curNextOrdinaryVictims);
       }
@@ -206,19 +245,20 @@ public class ReuseEvictor extends BlockStoreEventListenerBase implements Evictor
         try {
           meta = mManagerView.getBlockMeta(blockId);
         } catch (IOException e) {
-          LOG.error(String.format("Block %d not exists on local worker!", blockId));
+          LOG.debug(String.format("Block %d not exists on local worker!", blockId));
         }
         if (meta == null) {
           break;
         }
       }
       if (meta != null) {
-        partition.setBlockSize(meta.getBlockSize());
+        //partition.setBlockSize(meta.getBlockSize());
         BlockStoreLocation location = meta.getBlockLocation();
         partition.setTierLevel(location.tierLevel());
         partition.setDirIndex(location.dir());
         LOG.debug("Added partition " + partition + " to mPartitions.");
-        mPartitions.add(partition);
+        boolean inMem = location.tierAlias() == StorageLevelAlias.MEM.getValue();
+        mPartitions.add(new Pair<PartitionInfo, Double>(partition, computeBenefit(partition.getBenefit(), inMem)));
       }
     }
     LOG.info("Added {} partitions to mPartitions.", mPartitions.size());
@@ -272,27 +312,25 @@ public class ReuseEvictor extends BlockStoreEventListenerBase implements Evictor
 
   boolean canEvictBlocksFromDir(StorageDirView dirView, long availableBytes, double benefit,
        List<PartitionInfo> reuseVictims, List<BlockMeta> ordinaryVictims) {
-    //Set<PartitionInfo> blocks = mBlockInfos.get(
-    //        new Pair<Integer, Integer>(dirView.getParentTierView().getTierViewLevel(),
-    //                dirView.getDirViewIndex()));
-
     int tierLevel = dirView.getParentTierView().getTierViewLevel();
     int dirIndex = dirView.getDirViewIndex();
+
 
     LOG.debug("Test candidate dirView with tierLevel {}, dirIndex {} and {} capacityBytes, {} available bytes",
             tierLevel, dirIndex, dirView.getCapacityBytes(), dirView.getAvailableBytes());
     LOG.debug("There is {} partitions on this worker.", mPartitions.size());
     long requiredBytes = availableBytes - dirView.getAvailableBytes();
     List<BlockMeta> allBlocks = dirView.getEvictableBlocks();
-    for (PartitionInfo partition : mPartitions) {
+    for (Pair<PartitionInfo, Double> partitionWithBenefit : mPartitions) {
       if (requiredBytes <= 0) {
         return true;
       }
+      PartitionInfo partition = partitionWithBenefit.getFirst();
       if (partition.getTierLevel() != tierLevel || partition.getDirIndex() != dirIndex) {
         continue;
       }
       LOG.debug("Current candidate partition: " + partition);
-      if (partition.getBenefit() >= benefit) {
+      if (partitionWithBenefit.getSecond() >= benefit) {
         return false;
       }
       boolean evictPartition = false;
@@ -357,24 +395,22 @@ public class ReuseEvictor extends BlockStoreEventListenerBase implements Evictor
 
 
 
-  private StorageDirView selectDirToEvictBlocksFromAnyTier(long availableBytes, double benefit,
+  private StorageDirView selectDirToEvictBlocksFromAnyTier(long availableBytes, BenefitInfo benefitInfo,
        List<PartitionInfo> reuseVictims, List<BlockMeta> ordinaryVictims) {
     for (StorageTierView tierView : mManagerView.getTierViews()) {
-      for (StorageDirView dirView : tierView.getDirViews()) {
-        if (dirView.getAvailableBytes() >= availableBytes) {
-          return dirView;
-        }
-        if (canEvictBlocksFromDir(dirView, availableBytes, benefit, reuseVictims, ordinaryVictims)) {
-          return dirView;
-        }
+      StorageDirView dirView =  selectDirToEvictBlocksFromTier(tierView, availableBytes, benefitInfo, reuseVictims,
+              ordinaryVictims);
+      if (dirView != null) {
+        return dirView;
       }
     }
     return null;
   }
 
   private StorageDirView selectDirToEvictBlocksFromTier(StorageTierView tierView,
-       long availableBytes, double benefit, List<PartitionInfo> reuseVictims,
+       long availableBytes, BenefitInfo benefitInfo, List<PartitionInfo> reuseVictims,
        List<BlockMeta> ordinaryVictims) {
+    double benefit = computeBenefit(benefitInfo, tierView.getTierViewAlias() == StorageLevelAlias.MEM.getValue());
     for (StorageDirView dirView : tierView.getDirViews()) {
       if (dirView.getAvailableBytes() >= availableBytes) {
         return dirView;
@@ -388,10 +424,11 @@ public class ReuseEvictor extends BlockStoreEventListenerBase implements Evictor
 
 
 
-  private StorageDirView selectDirToTransferPartition(double benefit, long totalSize,
+  private StorageDirView selectDirToTransferPartition(BenefitInfo benefitInfoInfo, long totalSize,
           List<StorageTierView> toTiers, Map<StorageDirView, Long> pendingBytesInDir,
           List<PartitionInfo> reuseVictims, List<BlockMeta> ordinaryVictims) {
     for (StorageTierView toTier : toTiers) {
+      double benefit = computeBenefit(benefitInfoInfo, toTier.getTierViewAlias() == StorageLevelAlias.MEM.getValue());
       for (StorageDirView toDir: toTier.getDirViews()) {
         long pendingBytes = 0L;
         if (pendingBytesInDir.containsKey(toDir)) {

@@ -59,32 +59,9 @@ public class BasicOperations implements Callable<Boolean> {
   public Boolean call() throws Exception {
     System.setProperty("tachyon.user.quota.unit.bytes", "536870912");
     TachyonFS tachyonClient = TachyonFS.get(mMasterLocation, new TachyonConf());
-    /*
     createFile(tachyonClient);
     writeFile(tachyonClient);
     return readFile(tachyonClient);
-    */
-
-    ///*
-    TachyonURI path1 = new TachyonURI("/global_spark_tachyon/1/operator_1_0");
-    if (!tachyonClient.exist(path1)) {
-      createFile(tachyonClient, path1);
-    }
-    writeFile(tachyonClient, path1, 1, 0, 2.0);
-
-    TachyonURI path2 = new TachyonURI("/global_spark_tachyon/2/operator_2_0");
-    if (!tachyonClient.exist(path2)) {
-      createFile(tachyonClient, path2);
-    }
-    writeFile(tachyonClient, path2, 2, 0, 4.0);
-    //*/
-
-    TachyonURI path3 = new TachyonURI("/global_spark_tachyon/4/operator_4_0");
-    if (!tachyonClient.exist(path3)) {
-      createFile(tachyonClient, path3);
-    }
-    writeFile(tachyonClient, path3, 4, 0, 2.0);
-    return true;
   }
 
   //zengdan
@@ -121,26 +98,6 @@ public class BasicOperations implements Callable<Boolean> {
     CommonUtils.printTimeTakenMs(startTimeMs, LOG, "writeFile to file " + mFilePath);
   }
 
-  private void writeFile(TachyonFS tachyonClient, TachyonURI path, int id, int index, double benefit) throws IOException {
-    ByteBuffer buf = ByteBuffer.allocate(mNumbers * 4);
-    buf.order(ByteOrder.nativeOrder());
-    for (int k = 0; k < mNumbers; k ++) {
-      buf.putInt(k);
-    }
-
-    buf.flip();
-    LOG.debug("Writing data...");
-    buf.flip();
-
-    long startTimeMs = CommonUtils.getCurrentMs();
-    TachyonFile file = tachyonClient.getFile(path);
-    //OutStream os = file.getOutStream(mWriteType);zengdan
-    OutStream os = file.getOutStream(mWriteType, buf.array().length, id, index, benefit);
-    os.write(buf.array());
-    os.close();
-
-    CommonUtils.printTimeTakenMs(startTimeMs, LOG, "writeFile to file " + path);
-  }
 
   private boolean readFile(TachyonFS tachyonClient) throws IOException {
     boolean pass = true;

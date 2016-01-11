@@ -190,7 +190,7 @@ interface BlockStore {
   void removeBlock(long userId, long blockId) throws IOException;
 
   //zengdan
-  void updateBenefit(Set<PartitionInfo> benefit);
+  void updatePartitionInfos(Set<PartitionInfo> partitionInfos);
 
   /**
    * Notifies the block store that a block was accessed so the block store could update accordingly

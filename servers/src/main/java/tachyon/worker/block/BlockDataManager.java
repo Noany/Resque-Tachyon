@@ -422,8 +422,8 @@ public class BlockDataManager {
   }
 
   //zengdan
-  public void updateBenefit(Set<PartitionInfo> benefit) {
-    mBlockStore.updateBenefit(benefit);
+  public void updatePartitionInfos(Set<PartitionInfo> partition) {
+    mBlockStore.updatePartitionInfos(partition);
   }
 
   /**

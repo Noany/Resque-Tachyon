@@ -30,6 +30,7 @@ import com.google.common.base.Preconditions;
 
 import tachyon.Constants;
 import tachyon.Pair;
+import tachyon.thrift.BenefitInfo;
 import tachyon.worker.block.BlockMetadataManagerView;
 import tachyon.worker.block.BlockStoreEventListenerBase;
 import tachyon.worker.block.BlockStoreLocation;
@@ -54,6 +55,11 @@ public class LRUEvictor extends BlockStoreEventListenerBase implements Evictor {
   private Map<Long, Boolean> mLRUCache = Collections
       .synchronizedMap(new LinkedHashMap<Long, Boolean>(LINKED_HASH_MAP_INIT_CAPACITY,
           LINKED_HASH_MAP_INIT_LOAD_FACTOR, LINKED_HASH_MAP_ACCESS_ORDERED));
+
+  @Override
+  public void setBandwidth(int memBandwidth, int diskBandwidth) {
+
+  }
 
   public LRUEvictor(BlockMetadataManagerView view) {
     mManagerView = Preconditions.checkNotNull(view);
@@ -192,7 +198,7 @@ public class LRUEvictor extends BlockStoreEventListenerBase implements Evictor {
 
   //zengdan
   @Override
-  public EvictionPlan freePartitionSpaceWithView(double benefit, long blockSize,
+  public EvictionPlan freePartitionSpaceWithView(BenefitInfo benefit, long blockSize,
       List<BlockStoreLocation> locations, BlockMetadataManagerView view) throws IOException {
     return null;
   }

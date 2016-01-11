@@ -86,6 +86,10 @@ public class MasterService {
     public void qgmaster_setBenefit(Map<String, Double> files) throws FileDoesNotExistException,
             InvalidPathException, TException;
 
+    //zengdan
+    public void qgmaster_updateBenefit(Map<String, BenefitInfo> filesBenefit)
+            throws FileDoesNotExistException, InvalidPathException, TException;
+
 
     public Set<Integer> worker_getPinIdList() throws org.apache.thrift.TException;
 
@@ -201,6 +205,9 @@ public class MasterService {
 
     //zengdan
     public void qgmaster_setBenefit(Map<String, Double> files, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws TException;
+
+    //zengdan
+    public void qgmaster_updateBenefit(Map<String, BenefitInfo> files, org.apache.thrift.async.AsyncMethodCallback resultHandler) throws TException;
 
     public void worker_getPinIdList(org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException;
 
@@ -482,6 +489,37 @@ public class MasterService {
       }
       return;
     }
+
+
+    //zengdan
+    public void qgmaster_updateBenefit(Map<String, BenefitInfo> files) throws FileDoesNotExistException,
+            InvalidPathException, TException{
+      send_qgmaster_updateBenefit(files);
+      recv_qgmaster_updateBenefit();
+    }
+
+    //zengdan
+    public void send_qgmaster_updateBenefit(Map<String, BenefitInfo> files) throws org.apache.thrift.TException
+    {
+      qgmaster_updateBenefit_args args = new qgmaster_updateBenefit_args();
+      args.setFilesBenefit(files);
+      sendBase("qgmaster_updateBenefit", args);
+    }
+
+    //zengdan
+    public void recv_qgmaster_updateBenefit() throws FileDoesNotExistException, InvalidPathException, org.apache.thrift.TException
+    {
+      qgmaster_updateBenefit_result result = new qgmaster_updateBenefit_result();
+      receiveBase(result, "qgmaster_updateBenefit");
+      if (result.eF != null) {
+        throw result.eF;
+      }
+      if (result.eI != null) {
+        throw result.eI;
+      }
+      return;
+    }
+
 
 
     public Set<Integer> worker_getPinIdList() throws org.apache.thrift.TException
@@ -1496,7 +1534,7 @@ public class MasterService {
       }
     }
 
-    //zengdan
+
     //zengdan
     public void qgmaster_setBenefit(Map<String, Double> files,
             org.apache.thrift.async.AsyncMethodCallback resultHandler)
@@ -1537,6 +1575,45 @@ public class MasterService {
       }
     }
 
+    //zengdan
+    public void qgmaster_updateBenefit(Map<String, BenefitInfo> files,
+                                    org.apache.thrift.async.AsyncMethodCallback resultHandler)
+            throws TException {
+      checkReady();
+      qgmaster_updateBenefit_call method_call = new qgmaster_updateBenefit_call(files, resultHandler, this, ___protocolFactory, ___transport);
+      this.___currentMethod = method_call;
+      ___manager.call(method_call);
+    }
+
+    public static class qgmaster_updateBenefit_call extends org.apache.thrift.async.TAsyncMethodCall {
+      private Map<String, BenefitInfo> filesBenefit;
+      public qgmaster_updateBenefit_call(Map<String, BenefitInfo> filesBenefit,
+                                      org.apache.thrift.async.AsyncMethodCallback resultHandler,
+                                      org.apache.thrift.async.TAsyncClient client,
+                                      org.apache.thrift.protocol.TProtocolFactory protocolFactory,
+                                      org.apache.thrift.transport.TNonblockingTransport transport) throws org.apache.thrift.TException {
+        super(client, protocolFactory, transport, resultHandler, false);
+        this.filesBenefit = filesBenefit;
+      }
+
+      public void write_args(org.apache.thrift.protocol.TProtocol prot) throws org.apache.thrift.TException {
+        prot.writeMessageBegin(new org.apache.thrift.protocol.TMessage("qgmaster_updateBenefit",
+                org.apache.thrift.protocol.TMessageType.CALL, 0));
+        qgmaster_updateBenefit_args args = new qgmaster_updateBenefit_args();
+        args.setFilesBenefit(filesBenefit);
+        args.write(prot);
+        prot.writeMessageEnd();
+      }
+
+      public void getResult() throws FileDoesNotExistException, InvalidPathException, org.apache.thrift.TException {
+        if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
+          throw new IllegalStateException("Method call not finished!");
+        }
+        org.apache.thrift.transport.TMemoryInputTransport memoryTransport = new org.apache.thrift.transport.TMemoryInputTransport(getFrameBuffer().array());
+        org.apache.thrift.protocol.TProtocol prot = client.getProtocolFactory().getProtocol(memoryTransport);
+        (new Client(prot)).recv_qgmaster_updateBenefit();
+      }
+    }
 
     public void worker_getPinIdList(org.apache.thrift.async.AsyncMethodCallback resultHandler) throws org.apache.thrift.TException {
       checkReady();
@@ -2514,6 +2591,7 @@ public class MasterService {
       processMap.put("worker_heartbeat", new worker_heartbeat());
       processMap.put("worker_cacheBlock", new worker_cacheBlock());
       processMap.put("qgmaster_setBenefit", new qgmaster_setBenefit());
+      processMap.put("qgmaster_updateBenefit", new qgmaster_updateBenefit());
       processMap.put("worker_getPinIdList", new worker_getPinIdList());
       processMap.put("worker_getPriorityDependencyList", new worker_getPriorityDependencyList());
       processMap.put("user_createDependency", new user_createDependency());
@@ -2713,6 +2791,33 @@ public class MasterService {
         qgmaster_setBenefit_result result = new qgmaster_setBenefit_result();
         try {
           iface.qgmaster_setBenefit(args.filesBenefit);
+        } catch (FileDoesNotExistException eF) {
+          result.eF = eF;
+        } catch (InvalidPathException eI) {
+          result.eI = eI;
+        }
+        return result;
+      }
+    }
+
+    //zengdan
+    public static class qgmaster_updateBenefit<I extends Iface> extends org.apache.thrift.ProcessFunction<I, qgmaster_updateBenefit_args> {
+      public qgmaster_updateBenefit() {
+        super("qgmaster_updateBenefit");
+      }
+
+      public qgmaster_updateBenefit_args getEmptyArgsInstance() {
+        return new qgmaster_updateBenefit_args();
+      }
+
+      protected boolean isOneway() {
+        return false;
+      }
+
+      public qgmaster_updateBenefit_result getResult(I iface, qgmaster_updateBenefit_args args) throws org.apache.thrift.TException {
+        qgmaster_updateBenefit_result result = new qgmaster_updateBenefit_result();
+        try {
+          iface.qgmaster_updateBenefit(args.filesBenefit);
         } catch (FileDoesNotExistException eF) {
           result.eF = eF;
         } catch (InvalidPathException eI) {
@@ -3438,6 +3543,7 @@ public class MasterService {
       processMap.put("worker_heartbeat", new worker_heartbeat());
       processMap.put("worker_cacheBlock", new worker_cacheBlock());
       processMap.put("qgmaster_setBenefit", new qgmaster_setBenefit());
+      processMap.put("qgmaster_updateBenefit", new qgmaster_updateBenefit());
       processMap.put("worker_getPinIdList", new worker_getPinIdList());
       processMap.put("worker_getPriorityDependencyList", new worker_getPriorityDependencyList());
       processMap.put("user_createDependency", new user_createDependency());
@@ -3884,6 +3990,66 @@ public class MasterService {
         iface.qgmaster_setBenefit(args.filesBenefit, resultHandler);
       }
     }
+
+    //zengdan
+    public static class qgmaster_updateBenefit<I extends AsyncIface> extends org.apache.thrift.AsyncProcessFunction<I, qgmaster_updateBenefit_args, Void> {
+      public qgmaster_updateBenefit() {
+        super("qgmaster_updateBenefit");
+      }
+
+      public qgmaster_updateBenefit_args getEmptyArgsInstance() {
+        return new qgmaster_updateBenefit_args();
+      }
+
+      public AsyncMethodCallback<Void> getResultHandler(final AsyncFrameBuffer fb, final int seqid) {
+        final org.apache.thrift.AsyncProcessFunction fcall = this;
+        return new AsyncMethodCallback<Void>() {
+          public void onComplete(Void o) {
+            qgmaster_updateBenefit_result result = new qgmaster_updateBenefit_result();
+            try {
+              fcall.sendResponse(fb,result, org.apache.thrift.protocol.TMessageType.REPLY,seqid);
+              return;
+            } catch (Exception e) {
+              LOGGER.error("Exception writing to internal frame buffer", e);
+            }
+            fb.close();
+          }
+          public void onError(Exception e) {
+            byte msgType = org.apache.thrift.protocol.TMessageType.REPLY;
+            org.apache.thrift.TBase msg;
+            qgmaster_updateBenefit_result result = new qgmaster_updateBenefit_result();
+            if (e instanceof FileDoesNotExistException) {
+              result.eF = (FileDoesNotExistException) e;
+              result.setEFIsSet(true);
+              msg = result;
+            } else if (e instanceof InvalidPathException) {
+              result.eI = (InvalidPathException) e;
+              result.setEIIsSet(true);
+              msg = result;
+            } else {
+              msgType = org.apache.thrift.protocol.TMessageType.EXCEPTION;
+              msg = (org.apache.thrift.TBase)new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.INTERNAL_ERROR, e.getMessage());
+            }
+            try {
+              fcall.sendResponse(fb,msg,msgType,seqid);
+              return;
+            } catch (Exception ex) {
+              LOGGER.error("Exception writing to internal frame buffer", ex);
+            }
+            fb.close();
+          }
+        };
+      }
+
+      protected boolean isOneway() {
+        return false;
+      }
+
+      public void start(I iface, qgmaster_updateBenefit_args args, org.apache.thrift.async.AsyncMethodCallback<Void> resultHandler) throws TException {
+        iface.qgmaster_updateBenefit(args.filesBenefit, resultHandler);
+      }
+    }
+
 
 
     public static class worker_getPinIdList<I extends AsyncIface> extends org.apache.thrift.AsyncProcessFunction<I, worker_getPinIdList_args, Set<Integer>> {
@@ -12499,10 +12665,10 @@ public class MasterService {
 
     @Override
     public String toString() {
-      StringBuilder sb = new StringBuilder("worker_cacheBlock_args(");
+      StringBuilder sb = new StringBuilder("qgmaster_setBenefit_args(");
       boolean first = true;
 
-      sb.append("workerId:");
+      sb.append("fileBenefit:");
       sb.append(this.filesBenefit);
       sb.append(")");
       return sb.toString();
@@ -12956,7 +13122,7 @@ public class MasterService {
 
     @Override
     public String toString() {
-      StringBuilder sb = new StringBuilder("worker_cacheBlock_result(");
+      StringBuilder sb = new StringBuilder("qgmaster_setBenefit_result(");
       boolean first = true;
 
       sb.append("eF:");
@@ -13111,6 +13277,856 @@ public class MasterService {
     }
 
   }
+
+
+  //zengdan
+  public static class qgmaster_updateBenefit_args implements org.apache.thrift.TBase<qgmaster_updateBenefit_args, qgmaster_updateBenefit_args._Fields>, java.io.Serializable, Cloneable, Comparable<qgmaster_updateBenefit_args>   {
+    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("qgmaster_updateBenefit_args");
+
+    private static final org.apache.thrift.protocol.TField FILES_BENEFIT_FIELD_DESC = new org.apache.thrift.protocol.TField("filesBenefit", org.apache.thrift.protocol.TType.MAP, (short)1);
+
+    private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
+    static {
+      schemes.put(StandardScheme.class, new qgmaster_updateBenefit_argsStandardSchemeFactory());
+      schemes.put(TupleScheme.class, new qgmaster_updateBenefit_argsTupleSchemeFactory());
+    }
+
+    public Map<String, BenefitInfo> filesBenefit;
+
+    /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
+    public enum _Fields implements org.apache.thrift.TFieldIdEnum {
+      FILES_BENEFIT((short)1, "filesBenefit");
+
+      private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
+
+      static {
+        for (_Fields field : EnumSet.allOf(_Fields.class)) {
+          byName.put(field.getFieldName(), field);
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, or null if its not found.
+       */
+      public static _Fields findByThriftId(int fieldId) {
+        switch(fieldId) {
+          case 1:
+            return FILES_BENEFIT;
+          default:
+            return null;
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, throwing an exception
+       * if it is not found.
+       */
+      public static _Fields findByThriftIdOrThrow(int fieldId) {
+        _Fields fields = findByThriftId(fieldId);
+        if (fields == null) throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
+        return fields;
+      }
+
+      /**
+       * Find the _Fields constant that matches name, or null if its not found.
+       */
+      public static _Fields findByName(String name) {
+        return byName.get(name);
+      }
+
+      private final short _thriftId;
+      private final String _fieldName;
+
+      _Fields(short thriftId, String fieldName) {
+        _thriftId = thriftId;
+        _fieldName = fieldName;
+      }
+
+      public short getThriftFieldId() {
+        return _thriftId;
+      }
+
+      public String getFieldName() {
+        return _fieldName;
+      }
+    }
+
+    public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
+    static {
+      Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
+      tmpMap.put(_Fields.FILES_BENEFIT, new org.apache.thrift.meta_data.FieldMetaData("filesBenefit", org.apache.thrift.TFieldRequirementType.DEFAULT,
+              new org.apache.thrift.meta_data.MapMetaData(TType.MAP,
+                      new org.apache.thrift.meta_data.FieldValueMetaData(TType.STRING),
+                      new org.apache.thrift.meta_data.StructMetaData(TType.STRUCT, BenefitInfo.class))));
+      metaDataMap = Collections.unmodifiableMap(tmpMap);
+      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(qgmaster_updateBenefit_args.class, metaDataMap);
+    }
+
+    public qgmaster_updateBenefit_args() {
+    }
+
+    public qgmaster_updateBenefit_args(
+            Map<String, BenefitInfo> filesBenefit)
+    {
+      this();
+      this.filesBenefit = filesBenefit;
+    }
+
+    /**
+     * Performs a deep copy on <i>other</i>.
+     */
+    public qgmaster_updateBenefit_args(qgmaster_updateBenefit_args other) {
+      if(other.isSetFilesBenefit()){ //zengdan
+        this.filesBenefit = new HashMap<String, BenefitInfo>(other.filesBenefit);
+      }
+    }
+
+    public qgmaster_updateBenefit_args deepCopy() {
+      return new qgmaster_updateBenefit_args(this);
+    }
+
+    @Override
+    public void clear() {
+      this.filesBenefit = null;
+    }
+
+    public Map<String, BenefitInfo> getFilesBenefit() {
+      return this.filesBenefit;
+    }
+
+    public qgmaster_updateBenefit_args setFilesBenefit(Map<String, BenefitInfo> filesBenefit) {
+      this.filesBenefit = filesBenefit;
+      return this;
+    }
+
+    public void unsetFilesBenefit() {
+      filesBenefit = null;
+    }
+
+    //zengdan
+    public boolean isSetFilesBenefit() {
+      return this.filesBenefit != null;
+    }
+
+    //zengdan
+    public void setFilesBenefitIsSet(boolean value) {
+      if (!value) {
+        this.filesBenefit = null;
+      }
+    }
+
+    public void setFieldValue(_Fields field, Object value) {
+      switch (field) {
+        case FILES_BENEFIT:
+          if (value == null) {
+            unsetFilesBenefit();
+          } else {
+            setFilesBenefit((Map<String, BenefitInfo>)value);
+          }
+          break;
+      }
+    }
+
+    public Object getFieldValue(_Fields field) {
+      switch (field) {
+        case FILES_BENEFIT:
+          return getFilesBenefit();
+      }
+      throw new IllegalStateException();
+    }
+
+    /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
+    public boolean isSet(_Fields field) {
+      if (field == null) {
+        throw new IllegalArgumentException();
+      }
+
+      switch (field) {
+        case FILES_BENEFIT:
+          return isSetFilesBenefit();
+      }
+      throw new IllegalStateException();
+    }
+
+    @Override
+    public boolean equals(Object that) {
+      if (that == null)
+        return false;
+      if (that instanceof qgmaster_updateBenefit_args)
+        return this.equals((qgmaster_updateBenefit_args)that);
+      return false;
+    }
+
+    public boolean equals(qgmaster_updateBenefit_args that) {
+      if (that == null)
+        return false;
+
+      boolean this_present_filesBenefit = true && this.isSetFilesBenefit();
+      boolean that_present_filesBenefit = true && that.isSetFilesBenefit();
+      if (this_present_filesBenefit || that_present_filesBenefit) {
+        if (!(this_present_filesBenefit && that_present_filesBenefit))
+          return false;
+        if (!this.filesBenefit.equals(that.filesBenefit))
+          return false;
+      }
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      return 0;
+    }
+
+    @Override
+    public int compareTo(qgmaster_updateBenefit_args other) {
+      if (!getClass().equals(other.getClass())) {
+        return getClass().getName().compareTo(other.getClass().getName());
+      }
+
+      int lastComparison = Boolean.valueOf(isSetFilesBenefit()).compareTo(other.isSetFilesBenefit());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetFilesBenefit()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.filesBenefit, other.filesBenefit);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+
+      return 0;
+    }
+
+    public _Fields fieldForId(int fieldId) {
+      return _Fields.findByThriftId(fieldId);
+    }
+
+    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+      schemes.get(iprot.getScheme()).getScheme().read(iprot, this);
+    }
+
+    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+      schemes.get(oprot.getScheme()).getScheme().write(oprot, this);
+    }
+
+    @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder("qgmaster_updateBenefit_args(");
+      boolean first = true;
+
+      sb.append("filesBenefit:");
+      sb.append(this.filesBenefit);
+      sb.append(")");
+      return sb.toString();
+    }
+
+    public void validate() throws org.apache.thrift.TException {
+      // check for required fields
+      // check for sub-struct validity
+    }
+
+    private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
+      try {
+        write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
+      try {
+        read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private static class qgmaster_updateBenefit_argsStandardSchemeFactory implements SchemeFactory {
+      public qgmaster_updateBenefit_argsStandardScheme getScheme() {
+        return new qgmaster_updateBenefit_argsStandardScheme();
+      }
+    }
+
+    private static class qgmaster_updateBenefit_argsStandardScheme extends StandardScheme<qgmaster_updateBenefit_args> {
+
+      public void read(org.apache.thrift.protocol.TProtocol iprot, qgmaster_updateBenefit_args struct) throws org.apache.thrift.TException {
+        org.apache.thrift.protocol.TField schemeField;
+        iprot.readStructBegin();
+        while (true)
+        {
+          schemeField = iprot.readFieldBegin();
+          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) {
+            break;
+          }
+          switch (schemeField.id) {
+            case 1:
+              if (schemeField.type == TType.MAP) {
+                {
+                  org.apache.thrift.protocol.TMap _map40 = iprot.readMapBegin();
+                  struct.filesBenefit = new HashMap<String, BenefitInfo>(_map40.size);
+                  for (int _i41 = 0; _i41 < _map40.size; ++_i41)
+                  {
+                    String _elem42;
+                    _elem42 = iprot.readString();
+                    BenefitInfo _elem43 = new BenefitInfo();
+                    _elem43.read(iprot);
+                    struct.filesBenefit.put(_elem42, _elem43);
+                  }
+                  iprot.readMapEnd();
+                }
+                struct.setFilesBenefitIsSet(true);
+              } else {
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
+            default:
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+          }
+          iprot.readFieldEnd();
+        }
+        iprot.readStructEnd();
+
+        // check for required fields of primitive type, which can't be checked in the validate method
+        struct.validate();
+      }
+
+      public void write(org.apache.thrift.protocol.TProtocol oprot, qgmaster_updateBenefit_args struct) throws org.apache.thrift.TException {
+        struct.validate();
+
+        oprot.writeStructBegin(STRUCT_DESC);
+        if (struct.filesBenefit != null) { //zengdan
+          oprot.writeFieldBegin(FILES_BENEFIT_FIELD_DESC);
+          {
+            oprot.writeMapBegin(new org.apache.thrift.protocol.TMap(TType.STRING,
+                    org.apache.thrift.protocol.TType.DOUBLE, struct.filesBenefit.size()));
+            for (Map.Entry<String, BenefitInfo> _iter43 : struct.filesBenefit.entrySet())
+            {
+              oprot.writeString(_iter43.getKey());
+              _iter43.getValue().write(oprot);
+            }
+            oprot.writeMapEnd();
+          }
+          oprot.writeFieldEnd();
+          //zengdan
+        }
+        oprot.writeFieldStop();
+        oprot.writeStructEnd();
+      }
+
+    }
+
+    private static class qgmaster_updateBenefit_argsTupleSchemeFactory implements SchemeFactory {
+      public qgmaster_updateBenefit_argsTupleScheme getScheme() {
+        return new qgmaster_updateBenefit_argsTupleScheme();
+      }
+    }
+
+    private static class qgmaster_updateBenefit_argsTupleScheme extends TupleScheme<qgmaster_updateBenefit_args> {
+
+      @Override
+      public void write(org.apache.thrift.protocol.TProtocol prot, qgmaster_updateBenefit_args struct) throws org.apache.thrift.TException {
+        TTupleProtocol oprot = (TTupleProtocol) prot;
+        BitSet optionals = new BitSet();
+        if(struct.isSetFilesBenefit()){
+          optionals.set(0);
+        }
+        oprot.writeBitSet(optionals, 1);
+
+        if (struct.isSetFilesBenefit()) {
+          {
+            oprot.writeI32(struct.filesBenefit.size());
+            for (Map.Entry<String, BenefitInfo> _iter44 : struct.filesBenefit.entrySet())
+            {
+              oprot.writeString(_iter44.getKey());
+              _iter44.getValue().write(oprot);
+            }
+          }
+        }
+      }
+
+      @Override
+      public void read(org.apache.thrift.protocol.TProtocol prot, qgmaster_updateBenefit_args struct) throws org.apache.thrift.TException {
+        TTupleProtocol iprot = (TTupleProtocol) prot;
+        BitSet incoming = iprot.readBitSet(1);
+        if (incoming.get(2)) {
+          {
+            org.apache.thrift.protocol.TMap _map45 = new org.apache.thrift.protocol.TMap(TType.STRING, TType.DOUBLE, iprot.readI32());
+            struct.filesBenefit = new HashMap<String, BenefitInfo>(_map45.size);
+            for (int _i46 = 0; _i46 < _map45.size; ++_i46)
+            {
+              String _elem47;
+              _elem47 = iprot.readString();
+              BenefitInfo _elem48 = new BenefitInfo();
+              _elem48.read(iprot);
+              struct.filesBenefit.put(_elem47, _elem48);
+            }
+          }
+          struct.setFilesBenefitIsSet(true);
+        }
+      }
+    }
+
+  }
+
+  public static class qgmaster_updateBenefit_result implements org.apache.thrift.TBase<qgmaster_updateBenefit_result, qgmaster_updateBenefit_result._Fields>, java.io.Serializable, Cloneable, Comparable<qgmaster_updateBenefit_result>   {
+    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("qgmaster_updateBenefit_result");
+
+    private static final org.apache.thrift.protocol.TField E_F_FIELD_DESC = new org.apache.thrift.protocol.TField("eF", org.apache.thrift.protocol.TType.STRUCT, (short)1);
+    private static final org.apache.thrift.protocol.TField E_I_FIELD_DESC = new org.apache.thrift.protocol.TField("eI", org.apache.thrift.protocol.TType.STRUCT, (short)2);
+
+    private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
+    static {
+      schemes.put(StandardScheme.class, new qgmaster_updateBenefit_resultStandardSchemeFactory());
+      schemes.put(TupleScheme.class, new qgmaster_updateBenefit_resultTupleSchemeFactory());
+    }
+
+    public FileDoesNotExistException eF; // required
+    public InvalidPathException eI; // required
+
+    /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
+    public enum _Fields implements org.apache.thrift.TFieldIdEnum {
+      E_F((short)1, "eF"),
+      E_I((short)2, "eI");
+
+      private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
+
+      static {
+        for (_Fields field : EnumSet.allOf(_Fields.class)) {
+          byName.put(field.getFieldName(), field);
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, or null if its not found.
+       */
+      public static _Fields findByThriftId(int fieldId) {
+        switch(fieldId) {
+          case 1: // E_F
+            return E_F;
+          case 2: // E_I
+            return E_I;
+          default:
+            return null;
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, throwing an exception
+       * if it is not found.
+       */
+      public static _Fields findByThriftIdOrThrow(int fieldId) {
+        _Fields fields = findByThriftId(fieldId);
+        if (fields == null) throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
+        return fields;
+      }
+
+      /**
+       * Find the _Fields constant that matches name, or null if its not found.
+       */
+      public static _Fields findByName(String name) {
+        return byName.get(name);
+      }
+
+      private final short _thriftId;
+      private final String _fieldName;
+
+      _Fields(short thriftId, String fieldName) {
+        _thriftId = thriftId;
+        _fieldName = fieldName;
+      }
+
+      public short getThriftFieldId() {
+        return _thriftId;
+      }
+
+      public String getFieldName() {
+        return _fieldName;
+      }
+    }
+
+    // isset id assignments
+    public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
+    static {
+      Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
+      tmpMap.put(_Fields.E_F, new org.apache.thrift.meta_data.FieldMetaData("eF", org.apache.thrift.TFieldRequirementType.DEFAULT,
+              new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRUCT)));
+      tmpMap.put(_Fields.E_I, new org.apache.thrift.meta_data.FieldMetaData("eI", org.apache.thrift.TFieldRequirementType.DEFAULT,
+              new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRUCT)));
+      metaDataMap = Collections.unmodifiableMap(tmpMap);
+      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(qgmaster_updateBenefit_result.class, metaDataMap);
+    }
+
+    public qgmaster_updateBenefit_result() {
+    }
+
+    public qgmaster_updateBenefit_result(
+            FileDoesNotExistException eF,
+            InvalidPathException eI)
+    {
+      this();
+      this.eF = eF;
+      this.eI = eI;
+    }
+
+    /**
+     * Performs a deep copy on <i>other</i>.
+     */
+    public qgmaster_updateBenefit_result(qgmaster_updateBenefit_result other) {
+      if (other.isSetEF()) {
+        this.eF = new FileDoesNotExistException(other.eF);
+      }
+      if (other.isSetEI()) {
+        this.eI = new InvalidPathException(other.eI);
+      }
+    }
+
+    public qgmaster_updateBenefit_result deepCopy() {
+      return new qgmaster_updateBenefit_result(this);
+    }
+
+    @Override
+    public void clear() {
+      this.eF = null;
+      this.eI = null;
+    }
+
+    public FileDoesNotExistException getEF() {
+      return this.eF;
+    }
+
+    public qgmaster_updateBenefit_result setEF(FileDoesNotExistException eF) {
+      this.eF = eF;
+      return this;
+    }
+
+    public void unsetEF() {
+      this.eF = null;
+    }
+
+    /** Returns true if field eP is set (has been assigned a value) and false otherwise */
+    public boolean isSetEF() {
+      return this.eF != null;
+    }
+
+    public void setEFIsSet(boolean value) {
+      if (!value) {
+        this.eF = null;
+      }
+    }
+
+    public InvalidPathException getEI() {
+      return this.eI;
+    }
+
+    public qgmaster_updateBenefit_result setEI(InvalidPathException eI) {
+      this.eI = eI;
+      return this;
+    }
+
+    public void unsetEI() {
+      this.eI = null;
+    }
+
+    /** Returns true if field eB is set (has been assigned a value) and false otherwise */
+    public boolean isSetEI() {
+      return this.eI != null;
+    }
+
+    public void setEIIsSet(boolean value) {
+      if (!value) {
+        this.eI = null;
+      }
+    }
+
+    public void setFieldValue(_Fields field, Object value) {
+      switch (field) {
+        case E_F:
+          if (value == null) {
+            unsetEF();
+          } else {
+            setEF((FileDoesNotExistException) value);
+          }
+          break;
+
+        case E_I:
+          if (value == null) {
+            unsetEI();
+          } else {
+            setEI((InvalidPathException) value);
+          }
+          break;
+
+      }
+    }
+
+    public Object getFieldValue(_Fields field) {
+      switch (field) {
+        case E_F:
+          return getEF();
+
+        case E_I:
+          return getEI();
+
+      }
+      throw new IllegalStateException();
+    }
+
+    /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
+    public boolean isSet(_Fields field) {
+      if (field == null) {
+        throw new IllegalArgumentException();
+      }
+
+      switch (field) {
+        case E_F:
+          return isSetEF();
+        case E_I:
+          return isSetEI();
+      }
+      throw new IllegalStateException();
+    }
+
+    @Override
+    public boolean equals(Object that) {
+      if (that == null)
+        return false;
+      if (that instanceof qgmaster_updateBenefit_result)
+        return this.equals((qgmaster_updateBenefit_result)that);
+      return false;
+    }
+
+    public boolean equals(qgmaster_updateBenefit_result that) {
+      if (that == null)
+        return false;
+
+      boolean this_present_eF = true && this.isSetEF();
+      boolean that_present_eF = true && that.isSetEF();
+      if (this_present_eF || that_present_eF) {
+        if (!(this_present_eF && that_present_eF))
+          return false;
+        if (!this.eF.equals(that.eF))
+          return false;
+      }
+
+      boolean this_present_eB = true && this.isSetEI();
+      boolean that_present_eB = true && that.isSetEI();
+      if (this_present_eB || that_present_eB) {
+        if (!(this_present_eB && that_present_eB))
+          return false;
+        if (!this.eI.equals(that.eI))
+          return false;
+      }
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      return 0;
+    }
+
+    @Override
+    public int compareTo(qgmaster_updateBenefit_result other) {
+      if (!getClass().equals(other.getClass())) {
+        return getClass().getName().compareTo(other.getClass().getName());
+      }
+
+      int lastComparison = 0;
+
+      lastComparison = Boolean.valueOf(isSetEF()).compareTo(other.isSetEF());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetEF()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.eF, other.eF);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      lastComparison = Boolean.valueOf(isSetEI()).compareTo(other.isSetEI());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetEI()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.eI, other.eI);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      return 0;
+    }
+
+    public _Fields fieldForId(int fieldId) {
+      return _Fields.findByThriftId(fieldId);
+    }
+
+    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+      schemes.get(iprot.getScheme()).getScheme().read(iprot, this);
+    }
+
+    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+      schemes.get(oprot.getScheme()).getScheme().write(oprot, this);
+    }
+
+    @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder("qgmaster_updateBenefit_result(");
+      boolean first = true;
+
+      sb.append("eF:");
+      if (this.eF == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.eF);
+      }
+      first = false;
+      if (!first) sb.append(", ");
+      sb.append("eI:");
+      if (this.eI == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.eI);
+      }
+      first = false;
+      sb.append(")");
+      return sb.toString();
+    }
+
+    public void validate() throws org.apache.thrift.TException {
+      // check for required fields
+      // check for sub-struct validity
+    }
+
+    private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
+      try {
+        write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
+      try {
+        read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private static class qgmaster_updateBenefit_resultStandardSchemeFactory implements SchemeFactory {
+      public qgmaster_updateBenefit_resultStandardScheme getScheme() {
+        return new qgmaster_updateBenefit_resultStandardScheme();
+      }
+    }
+
+    private static class qgmaster_updateBenefit_resultStandardScheme extends StandardScheme<qgmaster_updateBenefit_result> {
+
+      public void read(org.apache.thrift.protocol.TProtocol iprot, qgmaster_updateBenefit_result struct) throws org.apache.thrift.TException {
+        org.apache.thrift.protocol.TField schemeField;
+        iprot.readStructBegin();
+        while (true)
+        {
+          schemeField = iprot.readFieldBegin();
+          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) {
+            break;
+          }
+          switch (schemeField.id) {
+            case 1: // E_F
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+                struct.eF = new FileDoesNotExistException();
+                struct.eF.read(iprot);
+                struct.setEFIsSet(true);
+              } else {
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
+            case 2: // E_I
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+                struct.eI = new InvalidPathException();
+                struct.eI.read(iprot);
+                struct.setEIIsSet(true);
+              } else {
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
+            default:
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+          }
+          iprot.readFieldEnd();
+        }
+        iprot.readStructEnd();
+
+        // check for required fields of primitive type, which can't be checked in the validate method
+        struct.validate();
+      }
+
+      public void write(org.apache.thrift.protocol.TProtocol oprot, qgmaster_updateBenefit_result struct) throws org.apache.thrift.TException {
+        struct.validate();
+
+        oprot.writeStructBegin(STRUCT_DESC);
+        if (struct.eF != null) {
+          oprot.writeFieldBegin(E_F_FIELD_DESC);
+          struct.eF.write(oprot);
+          oprot.writeFieldEnd();
+        }
+        if (struct.eI != null) {
+          oprot.writeFieldBegin(E_I_FIELD_DESC);
+          struct.eI.write(oprot);
+          oprot.writeFieldEnd();
+        }
+        oprot.writeFieldStop();
+        oprot.writeStructEnd();
+      }
+
+    }
+
+    private static class qgmaster_updateBenefit_resultTupleSchemeFactory implements SchemeFactory {
+      public qgmaster_updateBenefit_resultTupleScheme getScheme() {
+        return new qgmaster_updateBenefit_resultTupleScheme();
+      }
+    }
+
+    private static class qgmaster_updateBenefit_resultTupleScheme extends TupleScheme<qgmaster_updateBenefit_result> {
+
+      @Override
+      public void write(org.apache.thrift.protocol.TProtocol prot, qgmaster_updateBenefit_result struct) throws org.apache.thrift.TException {
+        TTupleProtocol oprot = (TTupleProtocol) prot;
+        BitSet optionals = new BitSet();
+        if (struct.isSetEF()) {
+          optionals.set(0);
+        }
+        if (struct.isSetEI()) {
+          optionals.set(1);
+        }
+        oprot.writeBitSet(optionals, 2);
+        if (struct.isSetEF()) {
+          struct.eF.write(oprot);
+        }
+        if (struct.isSetEI()) {
+          struct.eI.write(oprot);
+        }
+      }
+
+      @Override
+      public void read(org.apache.thrift.protocol.TProtocol prot, qgmaster_updateBenefit_result struct) throws org.apache.thrift.TException {
+        TTupleProtocol iprot = (TTupleProtocol) prot;
+        BitSet incoming = iprot.readBitSet(2);
+        if (incoming.get(0)) {
+          struct.eF = new FileDoesNotExistException();
+          struct.eF.read(iprot);
+          struct.setEFIsSet(true);
+        }
+        if (incoming.get(1)) {
+          struct.eI = new InvalidPathException();
+          struct.eI.read(iprot);
+          struct.setEIIsSet(true);
+        }
+      }
+    }
+
+  }
+
 
 
   public static class worker_getPinIdList_args implements org.apache.thrift.TBase<worker_getPinIdList_args, worker_getPinIdList_args._Fields>, java.io.Serializable, Cloneable, Comparable<worker_getPinIdList_args>   {

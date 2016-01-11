@@ -56,24 +56,7 @@ import tachyon.StorageDirId;
 import tachyon.StorageLevelAlias;
 import tachyon.TachyonURI;
 import tachyon.conf.TachyonConf;
-import tachyon.thrift.BlockInfoException;
-import tachyon.thrift.ClientBlockInfo;
-import tachyon.thrift.ClientDependencyInfo;
-import tachyon.thrift.ClientFileInfo;
-import tachyon.thrift.ClientRawTableInfo;
-import tachyon.thrift.ClientWorkerInfo;
-import tachyon.thrift.PartitionInfo;
-import tachyon.thrift.Command;
-import tachyon.thrift.CommandType;
-import tachyon.thrift.DependencyDoesNotExistException;
-import tachyon.thrift.FileAlreadyExistException;
-import tachyon.thrift.FileDoesNotExistException;
-import tachyon.thrift.InvalidPathException;
-import tachyon.thrift.NetAddress;
-import tachyon.thrift.SuspectedFileSizeException;
-import tachyon.thrift.TableColumnException;
-import tachyon.thrift.TableDoesNotExistException;
-import tachyon.thrift.TachyonException;
+import tachyon.thrift.*;
 import tachyon.underfs.UnderFileSystem;
 import tachyon.underfs.UnderFileSystem.SpaceType;
 import tachyon.util.CommonUtils;
@@ -262,7 +245,7 @@ public class MasterInfo extends ImageWriter {
   private final Map<Long, Boolean> mFetchBenefit = new HashMap<Long, Boolean>(); //zengdan
   //private final Map<Long, Map<Long, Double>> mWokerToBenefit =
   //        new HashMap<Long, Map<Long, Double>>();//zengdan
-  private final Map<Long, Set<PartitionInfo>> mWorkerToBenefit =
+  private final Map<Long, Set<PartitionInfo>> mWorkerToPartition =
           new HashMap<Long, Set<PartitionInfo>>();
 
   // Root Inode's id must be 1.
@@ -308,21 +291,9 @@ public class MasterInfo extends ImageWriter {
    * set the benefit of the blocks on workers
    * @param filesBenefit /global_spark_tachyon/operatorId -> benefit
    */
+  /*
   public void setWorkerToBenefit(Map<String, Double> filesBenefit) throws FileDoesNotExistException,
           InvalidPathException {
-    //operator path -> benefit
-
-    /*
-    Map<Long, Double> blockIdToBenefits = new HashMap<Long, Double>();
-    for (Map.Entry<String, Double> file : filesBenefit.entrySet()) {
-      double benefit = file.getValue();
-      for (ClientFileInfo partition: getFilesInfo(new TachyonURI(file.getKey()))) {
-        for (long blockId : partition.getBlockIds()) {
-          blockIdToBenefits.put(blockId, benefit);
-        }
-      }
-    }
-    */
     LOG.info("setWorkerToBenefit for " + filesBenefit.size() + " files.");
     Map<Long, Pair<String, Double>> partitions = new HashMap<Long, Pair<String, Double>>();
     for (Map.Entry<String, Double> file : filesBenefit.entrySet()) {
@@ -340,16 +311,6 @@ public class MasterInfo extends ImageWriter {
     synchronized (mWorkers) {
       for (Map.Entry<Long, MasterWorkerInfo> worker : mWorkers.entrySet()) {
         Set<Long> blocksOnWorker = worker.getValue().getBlocks();
-        /*
-        Map<Long, Double> blockIdToBenefitOnWorker = new HashMap<Long, Double>();
-        for (Long blockId : blocksOnWorker) {
-          if (blockIdToBenefits.get(blockId) != null) {
-            blockIdToBenefitOnWorker.put(blockId, blockIdToBenefits.get(blockId));
-          }
-        }
-        */
-
-        //Set<PartitionInfo> partitionInfosOnWorker = new HashSet<PartitionInfo>();
         Map<Pair<String, Double>, List<Long>> benefitInfosOnWorker =
                 new HashMap<Pair<String, Double>, List<Long>>();
         for (Long blockId : blocksOnWorker) {
@@ -374,7 +335,89 @@ public class MasterInfo extends ImageWriter {
 
         if (!partitionsOnWorker.isEmpty()) {
           synchronized (mFetchBenefit) {
-            mWorkerToBenefit.put(worker.getKey(), partitionsOnWorker);
+            mWorkerToPartition.put(worker.getKey(), partitionsOnWorker);
+            //mWokerToBenefit.put(worker.getKey(), blockIdToBenefitOnWorker);
+            mFetchBenefit.put(worker.getKey(), true);
+          }
+        }
+      }
+    }
+  }
+  */
+
+  //zengdan
+  /**
+   * update the benefit of the blocks on workers
+   * @param filesBenefit /global_spark_tachyon/operatorId -> benefit
+   */
+  public void updateWorkerToPartition(Map<String, BenefitInfo> filesBenefit) throws FileDoesNotExistException,
+          InvalidPathException {
+    //operator path -> benefit
+    Map<Long, PartitionInfo> partitions = new HashMap<Long, PartitionInfo>();
+    for (Map.Entry<String, BenefitInfo> file : filesBenefit.entrySet()) {
+      BenefitInfo benefit = file.getValue();
+      for (ClientFileInfo partitionFile: getFilesInfo(new TachyonURI(file.getKey()))) {
+        if (!partitionFile.isComplete) {
+          continue;
+        }
+        String[] paths = partitionFile.getPath().split("/");
+        String fileName = paths[paths.length - 1];  //operator_operatorId_index
+        String[] fileNames = fileName.split("_");
+        int len = fileNames.length;
+        PartitionInfo p = new PartitionInfo(Integer.parseInt(fileNames[len-2]),
+                Integer.parseInt(fileNames[len-1]), benefit, partitionFile.length);
+        p.setBlockIds(partitionFile.getBlockIds());
+        for (long blockId : partitionFile.getBlockIds()) {
+          partitions.put(blockId, p);
+        }
+      }
+    }
+    LOG.info("updateWorkerToBenefit for {} partitions.", partitions.size());
+
+    synchronized (mWorkers) {
+      for (Map.Entry<Long, MasterWorkerInfo> worker : mWorkers.entrySet()) {
+        Set<Long> blocksOnWorker = worker.getValue().getBlocks();
+        /*
+        Map<Long, Double> blockIdToBenefitOnWorker = new HashMap<Long, Double>();
+        for (Long blockId : blocksOnWorker) {
+          if (blockIdToBenefits.get(blockId) != null) {
+            blockIdToBenefitOnWorker.put(blockId, blockIdToBenefits.get(blockId));
+          }
+        }
+        */
+
+        //Set<PartitionInfo> partitionInfosOnWorker = new HashSet<PartitionInfo>();
+        Map<PartitionInfo, List<Long>> partitionInfosOnWorker =
+                new HashMap<PartitionInfo, List<Long>>();
+        for (Long blockId : blocksOnWorker) {
+          if (partitions.get(blockId) != null) {
+            PartitionInfo partitionInfo = partitions.get(blockId);
+            if(partitionInfosOnWorker.get(partitionInfo) == null){
+              partitionInfosOnWorker.put(partitionInfo, new ArrayList<Long>());
+            }
+            partitionInfosOnWorker.get(partitionInfo).add(blockId);
+          }
+        }
+
+
+        Set<PartitionInfo> partitionsOnWorker = new HashSet<PartitionInfo>();
+        for (Map.Entry<PartitionInfo, List<Long>> entry : partitionInfosOnWorker.entrySet()) {
+          PartitionInfo p = entry.getKey();
+          if (p.getBlockIdsSize() != entry.getValue().size()) {
+            LOG.error("Blocks of Partition {} not locate in the same location!", p);
+          } else {
+            partitionsOnWorker.add(p);
+          }
+        }
+
+        if (!partitionsOnWorker.isEmpty()) {
+          synchronized (mFetchBenefit) {
+            Set<PartitionInfo> oldPart = mWorkerToPartition.get(worker.getKey());
+            if (oldPart != null) {
+              partitionsOnWorker.addAll(oldPart);
+            }
+            LOG.info("mWorkerToPartition for worker {} has {} partitions.", worker.getKey(), partitionsOnWorker.size());
+            mWorkerToPartition.put(worker.getKey(), partitionsOnWorker);
             //mWokerToBenefit.put(worker.getKey(), blockIdToBenefitOnWorker);
             mFetchBenefit.put(worker.getKey(), true);
           }
@@ -2535,9 +2578,9 @@ public class MasterInfo extends ImageWriter {
             if (mFetchBenefit.containsKey(workerId) && mFetchBenefit.get(workerId)) {
               mFetchBenefit.put(workerId, false);
               //introduce benefit
-              LOG.info("Transfer " + mWorkerToBenefit.get(workerId).size() + " benefit in Command.");
+              LOG.info("Transfer " + mWorkerToPartition.get(workerId).size() + " benefit in Command.");
               return new Command(CommandType.Register, new ArrayList<Long>(),
-                      mWorkerToBenefit.get(workerId));
+                      mWorkerToPartition.get(workerId));
             }
           }
           return new Command(CommandType.Register, new ArrayList<Long>());
@@ -2548,6 +2591,7 @@ public class MasterInfo extends ImageWriter {
         tWorkerInfo.updateToRemovedBlocks(false, removedBlockIds);
         tWorkerInfo.updateLastUpdatedTimeMs();
 
+
         for (long blockId : removedBlockIds) {
           int fileId = BlockInfo.computeInodeId(blockId);
           int blockIndex = BlockInfo.computeBlockIndex(blockId);
@@ -2555,9 +2599,10 @@ public class MasterInfo extends ImageWriter {
           if (inode == null) {
             LOG.error("File " + fileId + " does not exist");
           } else if (inode.isFile()) {
-            ((InodeFile) inode).removeLocation(blockIndex, workerId);
+            //((InodeFile) inode).removeLocation(blockIndex, workerId);
+            ((InodeFile) inode).removeLocation(blockIndex, workerId, true);
             LOG.debug("File {} with block {} was evicted from worker {} ", fileId, blockIndex,
-                workerId);
+                    workerId);
           }
         }
 
@@ -2585,14 +2630,14 @@ public class MasterInfo extends ImageWriter {
           }
         }
 
-        if (toRemovedBlocks.size() != 0) {
+          if (toRemovedBlocks.size() != 0) {
           //zengdan
           synchronized (mFetchBenefit) {
             if (mFetchBenefit.containsKey(workerId) && mFetchBenefit.get(workerId)) {
               mFetchBenefit.put(workerId, false);
               //introduce benefit
-              LOG.info("Transfer " + mWorkerToBenefit.get(workerId).size() + " benefit in Command.");
-              return new Command(CommandType.Free, toRemovedBlocks, mWorkerToBenefit.get(workerId));
+              LOG.info("Transfer " + mWorkerToPartition.get(workerId).size() + " benefit in Command.");
+              return new Command(CommandType.Free, toRemovedBlocks, mWorkerToPartition.get(workerId));
             }
           }
           return new Command(CommandType.Free, toRemovedBlocks);
@@ -2605,9 +2650,9 @@ public class MasterInfo extends ImageWriter {
       if (mFetchBenefit.containsKey(workerId) && mFetchBenefit.get(workerId)) {
         mFetchBenefit.put(workerId, false);
         //introduce benefit
-        LOG.info("Transfer " + mWorkerToBenefit.get(workerId).size() + " benefit in Command.");
+        LOG.info("Transfer " + mWorkerToPartition.get(workerId).size() + " benefit in Command.");
         return new Command(CommandType.Nothing, new ArrayList<Long>(),
-                mWorkerToBenefit.get(workerId));
+                mWorkerToPartition.get(workerId));
       }
     }
     return new Command(CommandType.Nothing, new ArrayList<Long>());

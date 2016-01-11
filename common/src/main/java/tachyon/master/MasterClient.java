@@ -47,24 +47,7 @@ import tachyon.Version;
 import tachyon.conf.TachyonConf;
 import tachyon.retry.ExponentialBackoffRetry;
 import tachyon.retry.RetryPolicy;
-import tachyon.thrift.BlockInfoException;
-import tachyon.thrift.ClientBlockInfo;
-import tachyon.thrift.ClientDependencyInfo;
-import tachyon.thrift.ClientFileInfo;
-import tachyon.thrift.ClientRawTableInfo;
-import tachyon.thrift.ClientWorkerInfo;
-import tachyon.thrift.Command;
-import tachyon.thrift.DependencyDoesNotExistException;
-import tachyon.thrift.FileAlreadyExistException;
-import tachyon.thrift.FileDoesNotExistException;
-import tachyon.thrift.InvalidPathException;
-import tachyon.thrift.MasterService;
-import tachyon.thrift.NetAddress;
-import tachyon.thrift.NoWorkerException;
-import tachyon.thrift.SuspectedFileSizeException;
-import tachyon.thrift.TableColumnException;
-import tachyon.thrift.TableDoesNotExistException;
-import tachyon.thrift.TachyonException;
+import tachyon.thrift.*;
 import tachyon.util.CommonUtils;
 import tachyon.util.NetworkUtils;
 
@@ -832,6 +815,26 @@ public final class MasterClient implements Closeable {
 
       try {
         mClient.qgmaster_setBenefit(filesBenefit);
+        return;
+      } catch (FileDoesNotExistException e) {
+        throw e;
+      } catch (InvalidPathException e) {
+        throw e;
+      } catch (TException e) {
+        LOG.error(e.getMessage(), e);
+        mConnected = false;
+      }
+    }
+  }
+
+  //zengdan
+  public synchronized void qgmaster_updateBenefit(Map<String, BenefitInfo> filesBenefit) throws IOException,
+          FileDoesNotExistException, InvalidPathException {
+    while (!mIsClosed) {
+      connect();
+
+      try {
+        mClient.qgmaster_updateBenefit(filesBenefit);
         return;
       } catch (FileDoesNotExistException e) {
         throw e;

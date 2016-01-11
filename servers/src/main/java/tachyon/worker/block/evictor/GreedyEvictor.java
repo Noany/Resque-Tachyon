@@ -28,6 +28,7 @@ import com.google.common.base.Preconditions;
 
 import tachyon.Constants;
 import tachyon.Pair;
+import tachyon.thrift.BenefitInfo;
 import tachyon.worker.block.BlockMetadataManagerView;
 import tachyon.worker.block.BlockStoreEventListenerBase;
 import tachyon.worker.block.BlockStoreLocation;
@@ -49,15 +50,21 @@ public class GreedyEvictor extends BlockStoreEventListenerBase implements Evicto
   }
 
   @Override
+  public void setBandwidth(int memBandwidth, int diskBandwidth) {
+
+  }
+
+  @Override
   public EvictionPlan freeSpaceWithView(long availableBytes, BlockStoreLocation location,
       BlockMetadataManagerView view) throws IOException {
     mManagerView = view;
     return freeSpace(availableBytes, location);
   }
 
+
   //zengdan
   @Override
-  public EvictionPlan freePartitionSpaceWithView(double benefit, long blockSize,
+  public EvictionPlan freePartitionSpaceWithView(BenefitInfo benefit, long blockSize,
       List<BlockStoreLocation> locations, BlockMetadataManagerView view) throws IOException {
     return null;
   }
